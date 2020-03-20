@@ -1,0 +1,21 @@
+ubuntu 16.04
+安装vim:  
+  sudo apt-get install vim
+CentOS 7.2
+  yum -y install vim
+  
+  
+如何设置Vim行号
+vim 
+:set nu
+取消行号
+vim 
+:set nonu  
+
+打开vim的时候自动设置行号呢，这个时候就需要我们设置配置文件，两种配置方式
+
+/etc/vimrc   是系统范围的初始化配置
+
+～/.vimrc     个人的vim初始化配置
+
+打开~/.vimrc配置文件  输入set nu保存即可永久显示行号

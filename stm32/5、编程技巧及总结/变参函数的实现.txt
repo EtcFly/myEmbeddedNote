@@ -1,0 +1,77 @@
+函数的变参实现形式
+void Fun(int a, ...)
+{
+
+}
+1、由于函数的参数是通过压栈的方式来实现参数的传递，因此，只需要知道栈底元素，那么其他参数可通过偏移地址来访问。及实现了
+多参数的访问。
+2、其次，需要了解参数的个数，一般是通过"%d %d"这样的格式化字符串来实现，通过判定%d等字符数可确定参数个数。也可在首参数人为
+指定。
+
+例如：
+void f(char* fmt, ...)
+{
+    char* p0 = (char*)&fmt;
+    char* ap = p0 + sizeof(fmt);
+
+    char* p = fmt;
+    while (*p) {
+        if (*p == '%' && *(p+1) == 'd') {
+            printf("参数类型为int,值为 %d\n", *((int*)ap));
+            ap += sizeof(int);
+        }
+        else if (*p == '%' && *(p+1) == 'f') {
+            printf("参数类型为double,值为 %f\n", *((double*)ap));
+            ap += sizeof(double);
+        }
+        else if (*p == '%' && *(p+1) == 's') {
+            printf("参数类型为char*,值为 %s\n", *((char**)ap));
+            ap += sizeof(char*);
+        }
+        p++;
+    }
+
+}是实现一个类似于Printf的实现
+
+为了简化代码，定义如下宏
+#define va_list char*   /* 可变参数地址 */
+#define va_start(ap, x) ap=(char*)&x+sizeof(x) /* 初始化指针指向第一个可变参数 */
+#define va_arg(ap, t)   (ap+=sizeof(t),*((t*)(ap-sizeof(t)))) /* 取得参数值，同时移动指针指向后续参数 */
+#define va_end(ap)  ap=0 /* 结束参数处理 */
+
+void f(char* fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+
+    char* p = fmt;
+    while (*p) {
+        if (*p == '%' && *(p+1) == 'd') {
+            printf("参数类型为int,值为 %d\n", va_arg(ap, int));
+        }
+        else if (*p == '%' && *(p+1) == 'f') {
+            printf("参数类型为double,值为 %f\n", va_arg(ap, double));
+        }
+        else if (*p == '%' && *(p+1) == 's') {
+            printf("参数类型为char*,值为 %s\n", va_arg(ap, char*));
+        }
+        p++;
+    }
+    va_end(ap);
+}替代如上例子，代码更加清晰。
+但是，由于编译器的参数压栈规则不同意，因此，不同编译器的宏实现是不一样的，为了在不同编译器都可以对变参函数编译成功，
+因此，引入标准C文件定义#include <stdarg.h>
+其对我们的va_list，va_start等宏提供定义，因此直接使用即可。
+
+
+注意：
+1、可变参数必须靠固定参数来定位，所以函数中至少需要提供固定参数，f(固定参数，…)。 
+当然，也可以提供更多的固定参数，如f(固定参数1，固定参数2，…)。注意的是，当提供2个或以上固定参数时，va_start(ap, x）宏中
+的x必须是最后一个固定参数的名字（也就是紧邻可变参数的那个固定参数）。
+2、在没有函数原型的情况下，char与short类型都将被转换为int类型，float类型将被转换为double类型。实际上，用...标识的可变参数总是会执行这种类型提升。
+3、**va_arg宏的第2个参数不能被指定为char、short或者float类型**。
+因为char和short类型的参数会被转换为int类型，而float类型的参数会被转换为double类型 ……
+例如，这样写肯定是不对的：
+c = va_arg(ap,char);
+因为我们无法传递一个char类型参数，如果传递了，它将会被自动转化为int类型。上面的式子应该写成：
+c = va_arg(ap,int);

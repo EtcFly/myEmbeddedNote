@@ -1,0 +1,2 @@
+1、$K\ARM\ARMCC\bin\fromelf.exe --bin --output=..\OBj\Project.bin !L
+2、fromelf.exe的绝对路径 --bin -o ..\OBj\xx.bin ..\OBj\xx1.axf   其中..\表示上一级目录  .\表示本级目录  xx表示bin文件名 xx1表示axf文件名

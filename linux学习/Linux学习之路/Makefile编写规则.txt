@@ -1,0 +1,235 @@
+﻿Makefile编写语法规则:
+
+1、命令行必须以TAB开头
+ 如:
+ a.o: a.c
+	gcc -c -o a.o a.c
+2、多个文件可以使用变量来表示，方便修改，减少出错
+如:
+OBJ = a.o b.o c.o
+test: $(OBJ)
+	gcc -o test $(OBJ)
+a.o: a.c
+	gcc -c -o a.o a.c
+b.o: b.c
+	gcc -c -o b.o b.c	
+注:1、变量必须$(varible)
+   2、较长的命令可以使用\来连接, 但是其后面不能连接" "空格
+   3、Makefile默认第一个目标为终极目标，默认第一条开始执行。
+   4、Makefile中如果一行的非空字符以#开始表示注释，需要转义可以写成\#
+   5、如果不想在虚拟终端中打印命令本身,可以在命令前加上@符号,如@echo hello, 则只打印执行结果hello
+
+3、使用.PHONY(通过".PHONY"特殊目标将"clean"目标声明为伪目标。避免当磁盘上存在一个名
+   为"clean"文件时，目标"clean"所在规则的命令无法执行。
+如:
+.PHONY:clean
+clean:
+	-rm *.o  #清除编译产生的.o文件 (在命令行之前使用"-",意思是忽略命令"rm"的执行错误)
+	
+Makefile的组成部分：
+   为5个部分(显式规则、隐含规则、变量定义、指示符和注释)
+   
+显式规则：
+   它描述了在何种情况下如何更新一个或者多个被称为目标的文件(Makefile 的目标文件)。书写
+   Makefile 时需要明确地给出目标文件、目标的依赖文件列表以及更新目标文件所需要的命令(有些规则没有命
+   令，这样的规则只是纯粹的描述了文件之间的依赖关系)
+
+隐含规则：
+   它是make根据一类目标文件(典型的是根据文件名的后缀)而自动推导出来的规则。 make根据目标文件的名，
+   自动产生目标的依赖文件并使用默认的命令来对目标进行更新（建立一个规则）。
+如:
+a.o:def.h a.c 
+	gcc -c -o a.o def.h a.clean
+根据隐含规则可以写成
+a.o:def.h a.c 前提是a.o和a.c必须前面部分完全相同,只有.o和.c文件类型的差异
+
+变量定义：
+   使用一个字符或字符串代表一段文本串，当定义了一个变量以后，Makefile后续在需要使用此文本串的地
+   方，通过引用这个变量来实现对文本串的使用。
+   
+Makefile指示符：
+   指示符指明在 make 程序读取 makefile 文件过程中所要执行的一个动作
+   
+   $<: 所有依赖中的第一个依赖
+   $@: 目标文件名
+   $^: 所有依赖  
+
+Makefile变量: 
+   Makefile中变量一共有2种,立即变量和延迟变量，存在以下几种定义方式:
+   a := b 立即变量,变量定义的时候就被确定
+   a = b  延迟变量,在变量使用的时候被展开
+   a ?= b 如果a未定义,那么a=b,否则执行无效(延迟变量)
+   a += b 在变量a后边追加b,如果a为延迟变量,那么在使用的时候被展开,否则为立即变量
+   
+   define function
+    XXX
+   endef	
+  
+实例:
+   1、对于延迟变量允许后边使用的变量来定义，但是立即变量不允许这样
+   如： a = $(b) //延迟变量
+        b = c 
+	   //立即变量
+        a := $(b)
+        b = c //不允许
+   2、运行变量的嵌套
+   如:   a = $(b)
+         b = $(c)
+         c = "hello" 那么 $(a) = "hello"
+		 
+变量的替换：
+     foo = a.o b.o c.o
+     bar =$(foo:.o=.c) 
+     那么bar = a.c b.c c.c,注意这里必须每一项依赖都公共含有.o 
+     或者
+	 foo = a.o b.o c.o
+	 bar = $(foo:%.o=%.c)
+	 
+变量在作为变量:
+     x = y
+     y = z
+     z = "hello"	那么$($($(x)))=$($(y))=$(z)="hello" 
+	 
+变量连接成为新的变量
+     x = hello
+     y = frist
+     z = $(x)_$(y)    那么z=hello_frist
+	 
+追加变量
+    objects = main.o foo.o bar.o utils.o
+    objects += another.o 
+	那么objects = main.o foo.o bar.o utils.o another.o 
+	注意,当变量为立即变量时+=相当于:=
+    如     variable := value
+           variable += more 
+		   相当于
+           variable := value
+           variable := $(variable) more    
+
+** override 当接收make命令行参数的时候，那么在Makefile中对该参数的设置将被忽略，如果想设置此类参数
+那么需要加上override指示符
+
+define多行变量
+    格式: define variable
+          XXXX
+          endef
+		  
+条件语句
+    ifeq (var, text)
+		xxx
+	else
+		xxx
+	endif
+	如 obj = 1
+	all: 
+	ifeq ($(var), 1)
+		@echo "var is 1"
+	else
+		@echo "var is not 1"
+	endif
+	结果输出为var is 1, 如ifeq后边的1不写的话,那么默认为var为空的判断
+----------------------------------------------------------------------------	
+	ifdef (define_var) //注意没有#
+		XXX
+	else
+		XXX
+	#endif
+	如: obj = 
+	ifdef obj
+		@echo "obj is define "
+	else
+		@echo "obj is not define"
+	endif
+    结果为obj is define 	
+----------------------------------------------------------------------------		
+常见的函数的使用：foreach, subst, patsubst, wildcard, filter, filter-out
+   1、$(foreach, <var>, <list>, <text>)
+    这个函数的意思是，把参数<list>中的单词逐一取出放到参数<var>所指定的变量中，然 
+    后再执行<text>所包含的表达式。每一次<text>会返回一个字符串，循环过程中， 
+    <text>所返回的每个字符串会以空格分隔，最后当整个循环结束时，<text>所返回的每 
+    个字符串所组成的整个字符串 （以空格分隔）将会是foreach函数的返回值。  
+    所以，<var>最好是一个变量名，<list>可以是一个表达式，而<text>中一般会使用 
+    <var>这个参数来依次枚举<list>中的单词。	举个例子： 
+    names := a b c d 
+    files := $(foreach n,$(names),$(n).o) 
+	结果为files=a.o b.o c.o d.o 而n为临时变量 作用范围为foreach
+	
+   2、$(subst <from>, <to>, <text>)
+    名称：字符串替换函数——subst。 
+    功能：把字串<text>中的<from>字符串替换成<to>。 
+    返回：函数返回被替换过后的字符串。 
+    示例： 
+        $(subst ee,EE,feet on the street) ， 
+        把“feet on the street”中的“ee”替换成“EE” ，返回结果是“f EEt on the str EEt”。原来的字符串
+    做切割处理		
+   
+   3、$(patsubst <pattern>, <replacement>, <var>)
+     功能:patsubst是patten substitude的缩写，匹配替代的意思。这句是在SRC中找到所有.c 结尾的文件，然后把
+          所有的.c换成.o。
+     示例:  
+	      SRC = a.c b.c c.c d.c e
+		  OBJ = $(patsubst %.c %.o $(SRC))
+		  结果为a.o b.o c.o d.o e 如果%换成其他的无效,如*.c或者替换字符都是无效的
+      
+   4、$(wildcard <pattern>)
+     功能: 查找目录下特定的文件,返回文件名并以空格隔开，子目录下的文件包含文件路径和文件名
+	 示例:
+	      SRC = $(wildcard *.c ./files/*.c) 当前目录下存在a.c b.c c.c files目录下为d.c e.c
+		  结果为:SRC = a.c b.c c.c ./files/d.c ./files/e.c 注意这里的必须使用*，使用%无效
+		  
+   5、$(filter <pattern>, <text>)
+     功能: 过滤text中pattern模式的文件或者变量
+	 示例: SRC = a.c b.c c.c d.c e f.s
+	       OBJ = $(filter %.s %.c, $(SRC))
+           那么输出为OBJ = a.c b.c c.c d.c f.s 注意pattern中可以是多个模式,各模式以空格隔开
+		   
+   6、$(filter-out <pattern>, <text>)
+     功能: 与5中的相反，属于过滤text的不是pattern的文件或者变量
+	 示例: SRC = a.c b.c c.c d.c e f.s
+	       OBJ = $(filter-out %.s %.c, $(SRC))
+           那么输出为OBJ = e
+	7、addprefix为字符串添加前缀
+		   
+gcc自动文件依赖关系
+	-M 生成文件的依赖(包含系统库的依赖) 并打印到终端 
+		gcc -M main.c
+		gcc main.c -M -o main.d  依赖打印到main.d 注意如果加上-M选项不会生成main.i文件
+		
+	-MM 生成文件的依赖(不包含系统库的依赖) 并打印到终端
+	    gcc -MM main.c
+		gcc main.c -M -o main.d 打印到main.d文件
+		
+	-MD 相当于-M -MF(默认关闭-E选项) 如果指定了-o 后面的文件名  那么生成的依赖去掉最后一个.后边的
+       类型，改为.d，-MD后边不能接指定文件名, 生成的依赖以输入文件名去掉.*加上.d来命名	
+	    gcc -c -o test.o.o main.c -MD  //生成的文件名为test.o.d
+		gcc -c main.c -MD  //生成的文件名为main.d
+		
+		
+	-M(-MM) -MF 生成依赖  并存放在文件file里面
+	    gcc -c -o main.o main.c -M -MF main.d  生成的依赖以指定的文件名命名
+	
+	-MP 生成的依赖文件里面，依赖规则中的所有.h依赖项都会在该文件中生成一个伪目标，其不依赖任何其
+	    他依赖项。该伪规则将避免删除了对应的头文件而没有更新 “Makefile” 去匹配新的依赖关系而导致
+		make出错的情况出现。
+		gcc -c -o main.o main.c -MP -MD  为每一个依赖添加一个伪目标
+		
+	-MT 在生成的规则依赖中 添加依赖本身所依赖的文件
+	    gcc -c -o main.o main.c -MT -MD test
+		那么生成的依赖中main.d为:
+		  test: main.c
+    
+	Makefile对依赖的添加方式为: include dep_files, 如果include前面加上-表示忽略一些不存在的文件
+  	
+1、模式(类似于)
+	%.d : %.c 的写法
+	
+2、函数
+	使用通用函数搜索原文件(如patsubst、wildcard等), 避免删减单个文件总是需要更新Makefile
+	
+总结:
+	1、makefile中变量的赋值方式有如下几种:
+		* 通过命令执行时定义 如敲命令make bar=10, 对bar变量赋值
+		* makefile文件内部进行文件定义
+		* 通过外部shell变量赋值, 如MAKECMDGOALS变量用于make执行的参数传递
+
+  

@@ -1,0 +1,18 @@
+tail命令使用
+
+用途：输出文件的最后部分
+tail格式: tail [option]... [file] ...
+
+[option]:
+    -c, --bytes=k: 输出最后kByte字节, 或者使用-c+k 输出从第kByte开始的字节
+	-f,--follow[={name|descriptor}]: 
+	-F: 循环读取
+	-n, --lines=k: 输出最后k行数据, 使用-n+k输出第k行到最后的内容
+	--max-unchanged-stats=N:
+	--pid=PID: 与-f一起， 用于终止进程ID
+	-q, --quiet, --silent: 从不输出文件的首部(及文件名)
+	--retry: 一个文件如果打开失败在尝试一次
+	-s, --sleep-interval=N: 与-F一起，表示循环检测是时间(单位:s)
+	-v, --verbose: 总是输出给定文件的首部(及文件名)
+	
+	

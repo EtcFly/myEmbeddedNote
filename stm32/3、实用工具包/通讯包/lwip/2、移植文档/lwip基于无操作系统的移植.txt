@@ -1,0 +1,225 @@
+
+LWIP 2.1.2无操作系统移植
+	1、下载LWIP 2.1.2源码和contrib-2.1.2.zip
+	2、在源码目录新建一个lwip目录,并将lwip源码拷贝过去
+	3、在lwip目录下新建一个app目录和arch目录
+	4、contrib-2.1.2解压文件下拷贝cc.h ethernetif.c lwipopts.h
+		perf.h sys_arch.c sys_arch.h到新建的arch目录
+		
+	这里拷贝的
+		cc.h: 平台相关的类型定义
+		ethhernetif.c： 网卡相关的接口适配层(网卡相关的发送接收)
+		lwipopts.h: lwip配置裁剪文件
+		perf.h: 暂时不知道
+		sys_arch.c: 操作系统相关的封装适配层
+		sys_arch.h: 暂不知道
+		
+	5、添加LWIP源码 分别添加
+		src/api下全部文件 
+		src/core全部文件
+		src/core/ipv4下全部文件
+		src/netif ethernet.c文件,如果是IPV6的话另说
+		
+	6、添加源代码路径
+		lwip/src/include
+		lwip/src/netif
+		lwip/arch
+		lwip
+		可能具体的功能还有其他的头文件需要添加
+		
+	7、修改文件
+		7.1 cc.h文件
+			需要定义如下
+			typedef signed char     s8_t;
+			typedef unsigned char   u8_t;
+			typedef signed short    s16_t;
+			typedef unsigned short  u16_t;
+			typedef signed int      s32_t;
+			typedef unsigned int    u32_t;
+
+			typedef unsigned int sys_prot_t;
+
+			#define BYTE_ORDER LITTLE_ENDIAN  //小端格式
+			
+			#define PACK_STRUCT_STRUCT __attribute__((packed))
+			#define PACK_STRUCT_FIELD(x) x
+			#define PACK_STRUCT_BEGIN 
+			#define PACK_STRUCT_END
+			
+		7.2 lwipopts.h
+			需要修改NO_SYS宏为1 其他的选项可配置
+			
+		7.3 perf.h
+			#define PERF_START    /* null definition */
+			#define PERF_STOP(x)  /* null definition */
+			
+		7.4 sys_arch.c 定义lwip系统的时钟以及循环函数
+		
+			u32_t lwip_localtime;
+			extern struct netif *netif_ini;
+			void ethernetif_input(struct netif *netif);
+
+
+			u32_t sys_now(void)
+			{
+			  return lwip_localtime;
+			}
+
+			#define TCP_TMR_INTERVAL_T 250
+			#define ARP_TMR_INTERVAL_T 5000
+			#define UDP_TMR_INTERVAL_T 250
+			#define PKT_CHECK_INTERVAL_T 20
+			void lwip_loop(void)
+			{
+				static uint32_t TCPTimer = 0;
+				static uint32_t ARPTimer = 0;
+				static uint32_t PktRecvTimer = 0;
+				static uint32_t UDPTimer = 0;
+			#if LWIP_TCP
+			  if (sys_now() - TCPTimer >= TCP_TMR_INTERVAL_T)
+			  {
+				tcp_tmr();
+				TCPTimer = sys_now();
+			  }
+			#endif
+			  
+			  if ((sys_now() - ARPTimer) >= ARP_TMR_INTERVAL_T)
+			  {
+				etharp_tmr();
+				ARPTimer = sys_now();
+			  }
+			  
+			  if (DM9051_checkRecv())
+			  {
+				ethernetif_input(netif_ini);
+			  } 
+			}
+			其中的lwip_localtime在sysTick中断中1ms累加一次 lwip_loop在main主线程循环调用
+			
+		7.5 sys_arch.h 为空文件即可
+		7.6 ethernetif.c文件
+			主要修改
+			static void low_level_init(struct netif *netif);
+			static err_t low_level_output(struct netif *netif, struct pbuf *p);
+			static struct pbuf * low_level_input(struct netif *netif);
+			void ethernetif_input(struct netif *netif);
+			err_t ethernetif_init(struct netif *netif);
+			其中后面两个函数一般不需要修改
+			low_level_init主要是网卡的初始化,调用硬件初始化即可
+			low_level_output为网卡发送底层函数,修改如下
+			
+				static err_t low_level_output(struct netif *netif, struct pbuf *p)
+				{
+				  struct ethernetif *ethernetif = netif->state;
+				  struct pbuf *q;
+
+				#if ETH_PAD_SIZE
+				  pbuf_remove_header(p, ETH_PAD_SIZE); /* drop the padding word */
+				#endif
+				  uint8_t *buff = malloc(p->tot_len);
+				  if (buff == NULL) return ERR_BUF;
+					
+				  uint32_t count = 0;
+				  for (q = p; q != NULL; q = q->next) {
+					 memcpy(&buff[count], q->payload, q->len);
+					 count += q->len;
+				  }
+
+				  if (DM9051_Send(buff, p->tot_len) < 0)
+				  {
+					  free(buff);
+					  return ERR_VAL;
+				  }	 
+				  free(buff);
+				  
+				  MIB2_STATS_NETIF_ADD(netif, ifoutoctets, p->tot_len);
+				  if (((u8_t *)p->payload)[0] & 1) {
+					MIB2_STATS_NETIF_INC(netif, ifoutnucastpkts);
+				  } else {
+					MIB2_STATS_NETIF_INC(netif, ifoutucastpkts);
+				  }
+				#if ETH_PAD_SIZE
+				  pbuf_add_header(p, ETH_PAD_SIZE); /* reclaim the padding word */
+				#endif
+				  LINK_STATS_INC(link.xmit);
+				  return ERR_OK;
+				}
+			
+			low_level_input为网卡的接受底层函数, 如下
+				static struct pbuf *low_level_input(struct netif *netif)
+				{
+				  struct ethernetif *ethernetif = netif->state;
+				  struct pbuf *p, *q;
+
+				#if ETH_PAD_SIZE
+				  len += ETH_PAD_SIZE; /* allow room for Ethernet padding */
+				#endif
+
+				  /* We allocate a pbuf chain of pbufs from the pool. */
+				  p = DM9051_Recv(netif);
+				  if (p != NULL) {
+
+				#if ETH_PAD_SIZE
+					pbuf_remove_header(p, ETH_PAD_SIZE); /* drop the padding word */
+				#endif
+
+					MIB2_STATS_NETIF_ADD(netif, ifinoctets, p->tot_len);
+					if (((u8_t *)p->payload)[0] & 1) {
+					  MIB2_STATS_NETIF_INC(netif, ifinnucastpkts);
+					} else {
+					  MIB2_STATS_NETIF_INC(netif, ifinucastpkts);
+					}
+				#if ETH_PAD_SIZE
+					pbuf_add_header(p, ETH_PAD_SIZE); /* reclaim the padding word */
+				#endif
+
+					LINK_STATS_INC(link.recv);
+				  } else {
+					LINK_STATS_INC(link.memerr);
+					LINK_STATS_INC(link.drop);
+					MIB2_STATS_NETIF_INC(netif, ifindiscards);
+				  }
+				  return p;
+				}
+			这样我们就完成了90%的工作
+			
+		8. 编写应用层的测试程序
+		   8.1 在lwip/app目录下新建lwip_init.c lwip_init.h文件·
+			lwip_init.c主要完成网卡的组成和接口的添加
+			void lwip_initAll(void)
+			{
+				static struct netif eth_dm9051;
+				ip_addr_t ipaddr, netmask, gw;
+				
+				lwip_init();
+
+				IP4_ADDR(&gw, 192,168,13,1);
+				IP4_ADDR(&ipaddr, 192,168,13,30);
+				IP4_ADDR(&netmask, 255,255,255,0);
+				
+				eth_dm9051.hwaddr[0] = 0X12;
+				eth_dm9051.hwaddr[1] = 0X13;
+				eth_dm9051.hwaddr[2] = 0xf6;
+				eth_dm9051.hwaddr[3] = 0x00;
+				eth_dm9051.hwaddr[4] = 0x09;
+				eth_dm9051.hwaddr[5] = 0x12;
+				
+				netif_ini = netif_add(&eth_dm9051, &ipaddr, &netmask, &gw, NULL, ethernetif_init, ethernet_input);
+				if (netif_ini != NULL)
+				{
+					netif_set_default(&eth_dm9051);
+					netif_set_up(&eth_dm9051);
+				}	
+			}
+			此时在main主循环开始时初始化lwip_initAll即可, 在while循环中调用lwip_loop,此时就可以通过
+			icmp ping通开发板了
+
+
+
+		
+		
+		
+		
+		
+		
+		

@@ -1,0 +1,23 @@
+﻿以下内容仅仅在至少支持C99编译器上可行
+
+关于可变参数宏和__VA_ARGS__的使用
+
+@note:使用...来表示可变参数, 在编译过程中使用__VA_ARGS__来替换可变参数...
+
+如
+1、#define  FUNC_INIT(...) printf(__VA_ARGS__);
+那么: FUNC_INIT("hello world!"); 等效于printf("hello world!");
+	    FUNC_INIT("hello %d", x);  等效于printf("hello %d", x);
+
+2、#define  FUNC_IINIT(args...) printf(args);
+这里agrs...中的agrs是给可变参数取了一个名字, 及args等效于可变参数
+那么: FUNC_INIT("hello world!"); 等效于printf("hello world!");
+	    FUNC_INIT("hello %d", x);  等效于printf("hello %d", x);
+	    
+3、#define  DEF(farmat, ...) printf(farmat, ##__VA_ARGS__);
+这里##的目的是当可变参数宏为空时去掉参数前面的, 如
+DEF("hello");  如果没有加##, 那么编译器将报错，因为其替换为printf("hello",);而加入了##后
+替换的结果变为了printf("hello");
+
+又如:
+DEF("HELLO %X", X) 没加##和加入##的效果是一样的,因为##仅仅在可变参数为空的时候起作用	

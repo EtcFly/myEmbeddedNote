@@ -1,0 +1,73 @@
+tar命令使用
+
+用途：进行文件的压缩和解压
+tar格式: tar [OPTION]... [FILE] ...
+
+[option]:
+主操作模式:
+   -A, --catenate, --concatenate: 新增文件到已存在的归档文件
+   -c，--create: 创建一个新的存档
+   -d, --diff, --compare: 查找存档和文件系统之间的不同
+   --delete:从存档中删除
+   -r, --append: 追加文件到存档中
+   -t, --list:列出存档中的所有子项
+   --test-label: 测试存档标签并退出
+   -u, --update:只追加比存档中更新的内容
+   -x, --extract, --get:从存档中解压文件
+   
+常用属性:
+   -C, --directory=DIR: 切换到DIR目录
+   -f, --file=ARCHIVE: 使用存档文件或者设备存档
+   -j, --bzip2: 通过bzip过滤归档文件
+   -J, --xz: 通过xz过滤归档文件
+   -p, --preserve-permissions: 解压文件权限信息(默认超级用户)
+   -v, --verbose: 详细列出已经处理的文件
+   -z, --gzip: 通过gzip过滤归档文件
+   
+操作修饰符: 
+   --check-device:
+   -g:
+   -G, --incremental:
+   --ignore-failed-read:
+   --level=NUMBER:
+   -n, --seek:
+   --no-check-device:
+   --no-seek:
+   --occurrence[=NUMBER]:
+   --sparse-version=MAJOR[.MINOR]:
+   -S, --sparse:
+
+覆盖控制:
+
+选择输出流:
+
+文件属性处理:  
+
+扩展文件属性处理:
+
+设备选择和切换:
+
+设备屏蔽:
+
+归档格式选择:
+
+压缩选项:
+
+本地文件选择:
+
+文件名称转换:
+
+帮助信息输出:
+
+兼容性选择:
+
+
+常用的使用格式：
+1、解压文件 tar -xvf [fileName] 
+2、压缩文件(压缩算法z:gz   j:bz2   J:xz 压缩比:gz<bz2<xz)
+   tar -zcvf tar.gz  [fileName]
+  
+
+
+其他属性:
+

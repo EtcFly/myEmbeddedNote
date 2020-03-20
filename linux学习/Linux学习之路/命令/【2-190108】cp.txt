@@ -1,0 +1,27 @@
+cp命令使用
+
+用途：拷贝文件或者目录
+cp格式: cp [option] ... [-T] SOURCE   DEST
+        cp [option] ... SOURCE ... DIRECTORY
+		cp [option] ... -t DIRECTORY SOURCE ...
+		
+[option]:
+    -a: 【---暂未知---】
+	--attributes-only: 仅仅拷贝文件的属性，不拷贝文件的具体的内容
+	--backup[=CONTROL]:为存在的每一个目标文件创建一个备份
+    -b: 和--backup一样 但是不接受参数， 备份文件的命名为原文件尾部加上~ 
+    -d: 复制符号链接时，创建一个指向原文件的符号链接文件，没加此参数是直接复制
+        符号链接文件指向的文件或者目录。	
+    -f, --force: 强制复制文件和目录(当使用-n时此操作无效)
+	-i, --interactive: 覆盖文件前提示(覆盖前一个加-n属性)
+	-H: 【----暂不知道何用途----】
+	-l, --link: 对源文件建立硬链接而不是直接拷贝。
+	-n, --no-derefence: 对已经存在的文件不进行覆盖
+	-p: 保留源文件的属性，包括拥有者和所属组、权限以及时间
+	-R, -r, --recursive: 递归拷贝目录
+	-s, --symbolic-link: 创建符号链接而不是拷贝源文件
+	-t, --targe-directory=DIRECTORY: 拷贝所有的源参数到目标目录
+	-u,--update: 只拷贝比目标文件新的文件，或者目标目录不存在的文件
+	-v, --verbose: 打印操作的信息
+	
+	

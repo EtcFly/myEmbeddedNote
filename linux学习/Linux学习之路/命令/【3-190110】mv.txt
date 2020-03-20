@@ -1,0 +1,23 @@
+mv命令使用
+
+用途：移动或者重命名文件
+mv格式: mv [option] ... [-T] source dest
+        mv [option] ... source ... directory
+		mv [option] ... -t  directory source ...
+
+[option]:
+    --backup[=CONTROL]: 为每一个存在的目标文件创建备份
+	-b: 和--backup一样, 但是不接受参数
+	-f, --force: 直接覆盖文件而不给出任何提示   【default】
+	-i, --interactive: 覆盖前给出提示
+	-n, --no-clobber: 不覆盖存在的文件
+	
+注: -f, -i, -n三者某一命令只能同时使用一个,同时使用以最后一个为主
+    --strip-trailing-slashes: 删除尾部带斜杠的源文件 【----暂不知道何用途----】
+	-S, --suffix=SUFFIX: 覆盖备份后缀  【----暂不知道何用途----】
+	-t, --targe-directory=DIRECTORY: 将所有源文件移动到目标目录
+	-T, --no-targe-directory: 将目标视为普通文件 【----暂不知道何用途----】
+	-u, --update: 仅移动相对目标目录较新的文件或者目标目录没有的文件
+	-v, --verbose: 解释在执行什么操作
+	-z, --context: 【----暂不知道何用途----】
+	

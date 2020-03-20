@@ -1,0 +1,97 @@
+程序的编译
+   一般分为四个步骤:预处理、编译、汇编、链接,linux下一般操作如下：
+   预处理:将.c/.cpp等文件宏展开为.i文件(该过程仅仅进行宏的展开操作)
+   编译:将展开的.i文件作为输入编译为.s的汇编代码
+   汇编:将.s的汇编代码编译为.o的宿主机器的机器码
+   链接:将生产的.o机器代码与操作系统的依赖库链接为可执行的二进制程序文件。
+   
+gcc命令的常用选项
+	-E:执行预处理操作
+	   如:gcc -o hello.i -E hello.c  #对hello.c进行宏展开
+	-S: 执行汇编操作
+       如:gcc -o hello.o -E hello.i 
+	-o: 功能1、指示链接文件  2、指示生成的目标文件
+	   如: gcc -o test test1.o test2.o   #链接test1.o test2.o生成test文件
+	-c: 对.c/cpp程序执行预处理、编译、汇编,但是不进行链接操作   
+	   
+警告选项:
+    -Wall: 打开所有需要注意的信息
+    -g:调试信息 (只有打开的才可以使用GDB进行程序调试)
+ 
+优化选项:
+    -O,-O1: 编译器试图减小程序大小和执行时间 
+    -O2:优化进一步提高，执行时间进一步减小，同时编译时间更长
+    -O3:更一步优化，在O2的基础上，还打开了finline-function选项
+    -O0:不执行优化
+
+注意:当一条指令指示了多个-O选项，以最后一个为主,如: gcc -c -O1 -O2 -o main.o main.c
+
+
+连接选项:
+    -nostartfiles: 不连接系统的标准启动文件,标准库文件依旧链接
+    -nostdlib:不连接系统的标准启动文件和标准库文件，一般用于编译系统内核
+    -static: 静态编译
+    -shared:编译共享库(静态库)
+
+arm-linux-ldd:
+   -T:可以直接使用它来指定代码段、数据段、bss段的起始地址(
+   -T选项只适用于BootLoader、内核等没有底层软件支持的软件)
+   
+如:
+   1、直接指定代码段、数据段、bss段的起始地址
+     格式如下:
+	   -Ttext startaddr
+	   -Tdata startaddr
+	   -Tbss  startaddr  #startaddr为16进制数
+	   
+	   例: arm-linux-gcc -c -o link.o link.s
+	       arm-linux-ld -Text 0x00000000 link.o -o link_eld_0x0000
+		   //上面的语句就是设置地址为0X0000000
+		反汇编:
+		 arm-linux_objdump -D link_eld_0x0000 > link_0x0000.dis
+		 //生产的.dis为反汇编文件
+		 
+		 
+   2、链接文件
+    链接脚本文件的格式:
+	SECTIONS {
+	   sectionName startAddr ALIGN(align_byte) (NOLOAD) : AT(load addr)
+        { contents } > region : phdr=fill	     
+	   ...	  
+	}
+	sectionName: 段名称
+	startAddr: 这个段的重定位地址, 及运行地址
+	ALIGN: 指示字节对齐，这个对齐地址才是真正的运行地址
+	NOLOAD: 指示加载器运行时不加载这个段
+	AT: 指示这个段在编译出来的镜像文件中的地址---加载地址(不指
+	    示的话表示运行地址和加载地址一致)
+	举例:
+     SECTIONS {
+	    .= 0x30000000;                //段首地址
+		.text : { *(.text) }          //指示所有代码段聚合在一起
+		.rodata ALIGN(4) : { *(.rodata) } //指示rodata 4字节对齐并存放在.text段后
+	    .data ALIGN(4) : { *(.data) }   //指示data段 4字节对齐存放在.rodata
+        .bss ALIGN(4) : { *(.bss) *(COMMON) }		
+  	 }	
+	
+   
+   
+   
+   
+   
+   
+   
+
+
+'
+
+
+
+
+
+
+
+
+
+   
+	   

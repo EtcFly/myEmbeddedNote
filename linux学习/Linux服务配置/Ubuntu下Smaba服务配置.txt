@@ -1,0 +1,30 @@
+
+1、下载并安装samba服务
+	sudo apt-get install samba
+	查看是否安装成功
+	
+	samba --version
+	如果显示
+	Version 4.3.11-Ubuntu表示成功
+	
+2、配置Samba服务
+	vim /etc/samba/smb.conf //注意使用root权限
+	在最后面添加
+	[share]                                  //share为在win中显示的文件夹名称
+		comment = share folder               //添加注释
+		path = /home/wylinux/Document        //linux共享目录 
+		browseable = yes                     //是否在局域网可见 
+	#   guest ok = yes                       //是否允许匿名访问 及任何人都可以访问
+		valid users = wylinux                //仅针对特定用户访问
+		create mask = 0777                   //暂时不知道功能
+		writable = yes                       //共享文件夹可写
+	#	readable = yes                       //共享文件夹可读
+	
+3、添加smaba用户
+	smbpasswd -a wylinux  //添加smaba用户 并设置密码  wylinux必须是在linux物理机用户列表中
+
+3、保存配置并重启服务
+	sudo /etc/init.d/samba restart  即可
+	
+	
+	

@@ -1,0 +1,81 @@
+/*********************************************************************
+note: 汪洋   2018/11/18  10:06  星期日    心情:轻松   天气：雨
+**********************************************************************/
+
+linux下的文件操作命令常见为5个，分别为rm、mv、cp、cd、ls，接下来我们具体来看看各种命令的
+用法以及差异。
+
+1、rm 移除
+官方定义：
+NAME: 
+       rm - remove files or directories
+SYNOPSIS:
+       rm [OPTION]... FILE...   
+描述：rm可以移除任何文件，默认不能移除目录，如果需要移除目录的时候需要增加OPTION参数。
+
+参数：
+    -f, --force : 忽略不存在的文件而不给出任何提示
+    -i： 每一次移除都给出提示
+    -I： 移除4个以上文件时提示一次
+    --interactive[==WHEN] :
+    --no-preserve-system: 不区分对待/目录 (不保护/目录)
+    --preserve-system: 不移除/目录(默认的 保护/不被删除)
+    -r,-R,--recursive: 移除目录和子目录
+    -d, --dir: 移除空目录
+    -v, --verbose: 解释执行了那些操作
+    --help: 显示帮助
+    --version: 显示版本信息    
+如果想移除-开头的文件夹,如-foo，可以使用rm -- -foo  或者rm ./-foo
+安全方面：
+  如果删除了一个文件，其子目录和文件可能被恢复，为了避免这种
+情况，可以使用shred
+
+2、cp 拷贝
+NAME
+       cp - copy files and directories
+
+SYNOPSIS
+       cp [OPTION]... [-T] SOURCE DEST
+       cp [OPTION]... SOURCE... DIRECTORY
+       cp [OPTION]... -t DIRECTORY SOURCE...
+描述：
+   -a, --archive: 和-dR, --preserve=all相同
+   --attributes-only: 仅拷贝文件的属性，不拷贝文件数据
+   --backup[=CONTROL]: 备份文件
+   -b: 与--backup相同 但是不接受参数
+   --copy-contents: 递归拷贝多个文件到指定目录
+   -d: 与-no-dereference --preserve=link相同
+   -f, --force: 如果存在目标文件无法打开，将移除并重试
+   -i, --interactive: 文件覆盖提示
+   -H:
+   -l,--link:
+   -L,--dereference:
+   -n,--no-clobber:
+   -P,--no-dereference:
+   -p:
+   --preserve[=ATTR_LIST]:
+   -c:
+   --no-preserve=ATTR_LIST:
+   --parents:
+   -r, -R, --recursive: 递归拷贝目录       
+   --reflink=[WHEN]
+   --remove-destination:
+   --sparse=WHEN:
+   --strip-trailing-slashes:
+   -s,--symbolic-link:
+   -s, --suffix=SUFFIX:
+   -t, -target-directory:
+   -T, --no-target-directory:
+   -u, --update:
+   -v, --verbose:
+   -x, -one-file-system:
+   -z:
+   --context=[=CTX]:
+   --help:
+   --version:
+3、ls
+
+4、mv
+
+5、cd
+    

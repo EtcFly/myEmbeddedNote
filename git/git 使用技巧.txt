@@ -1,0 +1,93 @@
+1、git本地代码仓
+	git init 创建一个代码仓
+	git add <file> 添加一个文件到暂存区
+	git add . 添加当前目录所有文件到暂存区
+	git status 当前代码仓的状态
+	
+	git commit -m "log information" 提交到本地版本仓
+	
+	git log 查看版本仓提交日志 --pretty=oneline 定义紧凑输出
+	git log --graph //图形显示
+	git relog 查看历史命令记录
+	
+	//版本回退
+	git reset --hard HEAD^  回退到上一个版本
+	git reset --hard HEAD^^ 回退到上上一个版本
+	git reset --hard HEAD~100 回退到上一百个版本
+	
+	//丢弃工作区内容
+	git checkout -- <file> 丢弃工作区的修改(针对没有提交到暂存区的内容)
+	git reset HEAD <file> 将暂存区修改恢复到工作区,暂存区修改丢弃
+	
+	//删除版本库的文件
+	git rm <file>
+	
+	
+	
+2、git远端版本库
+	1、创建SSH公钥并绑定
+		 ssh-keygen -t rsa -C "youremail@example.com" //创建用户独一无二的密匙
+		 此时在用户家目录生成.pub和.rsa文件, 将.pub内容绑定到网页即可
+		 
+	2、第一次关联远端版本仓
+	git remote add origin git@server-name:path/repo-name.git； //git@server-name:path/repo-name.git为版本仓的地址
+	
+	3、git push -u origin master //第一次推送到远端仓库 后面就不需要-u选项
+	
+	4、git clone git@server-name:path/repo-name.git //克隆仓库
+	
+	5、git pull origin master //提交修改到远端仓库master分支
+	
+3、分支管理
+	1、git branch //查看当前存在的分支
+	2、git branch dev //创建一个dev分支
+	3、git checkout dev //切换到dev分支
+	4、git checkout -b dev //创建并切换到dev分支
+	5、git checkout -d dev //删除dev分支
+	6、git merge dev //合并dev分支到当前分支 --no-ff 不适用快速合并
+	
+4、修复bug  暂存分支信息stash
+	1、git stash 暂存当前分支信息
+	2、git stash list 查看分支暂存信息
+	3、git stash apply 恢复信息
+	4、git stash drop 删除stash信息
+	5、git stash pop 恢复并删除stash信息
+	6、git cherry-pick <commit> 合并特定提交到当前分支
+	
+5、feature分支
+	1、删除没有合并的feature 分支 git branch -D <feature>
+	
+	
+6、获取远端仓库的信息
+	1、git remote -v  获取远端仓库信息
+	2、git remote rm origin 取消本地仓库和远端仓库的关联
+	3、git checkout -b dev origin/dev 创建远端仓库的dev分支到本地
+	4、git branch --set-upstream-to=origin/dev  //关联当前分支到远端dev分支
+	
+7、git 标签
+	1、git tag <tagName> 为当前分支打标签
+	2、git tag -a <tagName> -m "注释"  10afd...    为10afd提交打标签并写入注释
+	3、git tag 查看所有标签
+	4、git show v1.0 显示v1.0版本的详细信息
+	5、git tag -d v1.0 本地删除v1.0标签
+	6、git push origin v1.0 将v1.0标签上传远端版本库
+	7、git push origin --tags 一次上传所有本地标签
+	8、git push origin :refs/tags/v0.9 如果想删除远端标签 在先删除本地标签 然后执行本命令删除远端标签
+	
+
+	
+	
+问题:
+	上传固件时显示! [rejected] master -> master (non-fast-forward)
+					error: failed to push some refs to 'git@github.com:yangchao0718/cocos2d.git
+					hint: Updates were rejected because the tip of your current branch is behin
+					hint: its remote counterpart. Integrate the remote changes (e.g.
+解决：git pull --rebase origin master
+	
+	
+	
+	
+	
+	
+	
+	

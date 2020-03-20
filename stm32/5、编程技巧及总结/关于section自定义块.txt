@@ -1,0 +1,169 @@
+
+不同的环境关于section的定义不尽相同
+1、 __CC_ARM
+    #define SECTION(x)                  __attribute__((section(x)))
+2、__ICCARM__
+    #define SECTION(x)                  @ x
+3、__GNUC__
+    #define SECTION(x)                  __attribute__((section(x)))
+	
+此时就可以指定一个变量的块地址标号了
+如
+int32_t aa SECTION("TEST") = 10;  //此时变量aa放在块SECTION中
+int32_t bb SECTION("TEST") = 12;  //变量bb追加在aa以后的空余空间中
+
+一般使用此类情况的时候，大多数是应用程序分开的(如内核和应用程序), 内核是不知道具体驱动有多少, 然而驱动却是由应用程序添加的,
+那么此时内核如何知道驱动的数量并正确的初始化呢? 答案就是本文介绍的方法
+
+链接器在创建镜像文件的时候，创建了相应的符号, 符号可以理解为一个变量
+如上文所述:连接器会自动创建
+	TEST$$Base  //指向TEST块的开始地址
+	TEST$$Limit //指向TEST块的最后一个内存的下一个地址
+的符号,内核运行的时候就可以确定驱动的数量了,因为这两个变量值得确定是链接过程中的,就可以确定这个内存的大小了。
+
+可以通过如下方式来应用, 不过在应用之前,需要加入外部声明
+extern uint32_t  TEST$$Base;
+extern uint32_t  TEST$$Limit;
+
+那么应用他们可以使用如下形式
+Type *p_start = &TEST$$Base;
+Type *p_end = &TEST$$Limit;
+size = (p_end-p_start);
+
+当然以上的获取方法仅仅为__CC_ARM所支持的, 其他的获取如下
+1、__ICCARM__
+{
+	Type *p_start =  __section_start("TEST");
+	Type *p_end   =  __section_end("TEST");	
+}
+2、__GNUC__
+{
+    extern const unsigned int _TEST_start;
+    extern const unsigned int _TEST_end;
+	Type *p_start =  &_TEST_start;
+	Type *p_end   =  &_TEST_end;	
+}
+
+关于__attribute__的用法很多
+如int aa __attribute__((at(0x20000000))) = 10; 指定aa变量的地址为绝对地址0x20000000
+注意at外面必须为两层括号,并且at仅仅用于修饰变量。否则报错 
+
+
+还有一点技巧可以使用,值得注意的是在RT_thread中有很多如
+#define INIT_BOARD_EXPORT(fn)           INIT_EXPORT(fn, "1")
+#define INIT_PREV_EXPORT(fn)            INIT_EXPORT(fn, "2")
+#define INIT_DEVICE_EXPORT(fn)          INIT_EXPORT(fn, "3")
+#define INIT_COMPONENT_EXPORT(fn)       INIT_EXPORT(fn, "4")
+#define INIT_ENV_EXPORT(fn)             INIT_EXPORT(fn, "5")
+#define INIT_APP_EXPORT(fn)             INIT_EXPORT(fn, "6")
+
+#define INIT_EXPORT(fn, level) const init_fn_t __rt_init_##fn SECTION(".rti_fn."level) = fn
+那么INIT_EXPORT(aa, "1") 就被替换成
+const init_fn_t __rt_init_aa SECTION(".rti_fn.1") = aa; //aa一般为函数地址
+因此,可以通过这种方式来实现对不定长函数的初始化.只是需要在块的最前面定义一个起始标识即可。如 
+void section_start(void)
+{
+
+}INIT_EXPORT(aa, 0);
+然后其他函数从INIT_EXPORT(aa, 1)及以后开始即可. 然后最后一个块加上end即可。
+
+
+之类的定义,其后面的数字可以给生产的块进行排序,当然,这与链接器的搜索原则分不开(原则上,链接器首先按照块名进行排序(abcd的先后原则), 
+对于块名相同的块按照函数名再一次排序)
+
+/********************以下为平台相关的定义******************************************/
+#if defined(__CC_ARM) || (defined(__ARMCC_VERSION) && __ARMCC_VERSION >= 6000000)
+    #define SECTION(x)                  __attribute__((section(x)))
+#elif defined(__ICCARM__)
+    #define SECTION(x)                  @ x
+#elif defined(__GNUC__)
+    #define SECTION(x)                  __attribute__((section(x)))
+#else
+    #define SECTION(x)
+#endif
+
+
+#if defined(__CC_ARM) || defined(__CLANG_ARM)           /* ARM Compiler */
+    #include <stdarg.h>
+    #define SECTION(x)                  __attribute__((section(x)))
+    #define RT_UNUSED                   __attribute__((unused))
+    #define RT_USED                     __attribute__((used))
+    #define ALIGN(n)                    __attribute__((aligned(n)))
+
+    #define RT_WEAK                     __attribute__((weak))
+    #define rt_inline                   static __inline
+    /* module compiling */
+    #ifdef RT_USING_MODULE
+        #define RTT_API                 __declspec(dllimport)
+    #else
+        #define RTT_API                 __declspec(dllexport)
+    #endif
+
+#elif defined (__IAR_SYSTEMS_ICC__)     /* for IAR Compiler */
+    #include <stdarg.h>
+    #define SECTION(x)                  @ x
+    #define RT_UNUSED
+    #define RT_USED                     __root
+    #define PRAGMA(x)                   _Pragma(#x)
+    #define ALIGN(n)                    PRAGMA(data_alignment=n)
+    #define RT_WEAK                     __weak
+    #define rt_inline                   static inline
+    #define RTT_API
+
+#elif defined (__GNUC__)                /* GNU GCC Compiler */
+    #ifdef RT_USING_NEWLIB
+        #include <stdarg.h>
+    #else
+        /* the version of GNU GCC must be greater than 4.x */
+        typedef __builtin_va_list       __gnuc_va_list;
+        typedef __gnuc_va_list          va_list;
+        #define va_start(v,l)           __builtin_va_start(v,l)
+        #define va_end(v)               __builtin_va_end(v)
+        #define va_arg(v,l)             __builtin_va_arg(v,l)
+    #endif
+
+    #define SECTION(x)                  __attribute__((section(x)))
+    #define RT_UNUSED                   __attribute__((unused))
+    #define RT_USED                     __attribute__((used))
+    #define ALIGN(n)                    __attribute__((aligned(n)))
+    #define RT_WEAK                     __attribute__((weak))
+    #define rt_inline                   static __inline
+    #define RTT_API
+#elif defined (__ADSPBLACKFIN__)        /* for VisualDSP++ Compiler */
+    #include <stdarg.h>
+    #define SECTION(x)                  __attribute__((section(x)))
+    #define RT_UNUSED                   __attribute__((unused))
+    #define RT_USED                     __attribute__((used))
+    #define ALIGN(n)                    __attribute__((aligned(n)))
+    #define RT_WEAK                     __attribute__((weak))
+    #define rt_inline                   static inline
+    #define RTT_API
+#elif defined (_MSC_VER)
+    #include <stdarg.h>
+    #define SECTION(x)
+    #define RT_UNUSED
+    #define RT_USED
+    #define ALIGN(n)                    __declspec(align(n))
+    #define RT_WEAK
+    #define rt_inline                   static __inline
+    #define RTT_API
+#elif defined (__TI_COMPILER_VERSION__)
+    #include <stdarg.h>
+    /* The way that TI compiler set section is different from other(at least
+     * GCC and MDK) compilers. See ARM Optimizing C/C++ Compiler 5.9.3 for more
+     * details. */
+    #define SECTION(x)
+    #define RT_UNUSED
+    #define RT_USED
+    #define PRAGMA(x)                   _Pragma(#x)
+    #define ALIGN(n)
+    #define RT_WEAK
+    #define rt_inline                   static inline
+    #define RTT_API
+#else
+    #error not supported tool chain
+#endif
+
+
+
+

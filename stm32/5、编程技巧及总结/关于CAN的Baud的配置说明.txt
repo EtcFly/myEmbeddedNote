@@ -1,0 +1,51 @@
+波特率=APB1Clock/(1+CAN_BS1+CAN_BS2)/CAN_Prescaler
+（PS：CAN_SJW表示重新同步跳跃宽度，不参与波特率的计算，其值可以编程为1到4个时间单元，表示该总线对波特率范围
+的容差度。公式中1表示同步段固定为一个单位时间。）
+eg:APB1Clock=36Mhz,CAN_BS1=3,CAN_BS2=5,CAN_Prescaler=32
+     36000k/9/32=125k/s 
+	 = Fclk/(1+CAN_BS1+CAN_BS2)/CAN_Psc
+
+另外，尽可能地把采样点设置为CiA推荐的值：
+CiA	波特率
+75%	>800K
+80%	>500K
+87.5%	<=500K
+
+
+CiA计算方式：(1+CAN_BS1)/(1+CAN_BS1+CAN_BS2)
+???采样点设置的影响：采样点设置的符合表格中的范围，CAN通信 会更稳定。
+The CAN bit comprises – depending on the configured “atomic” time unit called time quantum (tq) – multiple 
+of these time quanta. The time quanta length derives from the bit-rate prescaler and the used oscillator 
+frequency.
+The CAN bit is logically divided into four segments. The synchronization segment has always a length of 
+1 tq. The following propagation segment and phase-segment 1 are not distinguishable for the user. It is
+ configured as one value. The forth part is the phase-segment 2. Between the two phase-segments, 
+ the sample-point is located. If the bit-timing settings move the sample-point to the end of the bit,
+ the propagation segment is enlarged, so that you can realize longer networks. If the sample-point is 
+ configured in the other direction, the re-synchronization capability is increased.
+
+
+The sample point should be the same in all connected CAN nodes. However, in practice it is sufficient if 
+the sample points don't vary too much. The automotive industry has specified some recommendations for the
+ bit timing settings in the SAE J2284 series. For CANopen networks, the recommendations given in CiA 301
+ should be used. The sample points should be at 87,5 percent of the bit time. For most of the specified
+ bit-rates a range of 85 percent to 90 percent is allowed. Of course, the larger the tolerance range, the 
+ shorter the maximum possible length of the network。
+
+CAN位时间组成 取决于配置的“原子”时间单位称为时间量子（tq） - 这些时间量子的倍数。时间量程长度来自比特率预
+分频器和使用的振荡器频率。
+CAN位时间逻辑上分为四个段。同步段总是长度为1 tq。后面的传播段和相位段1对于用户是不可区分的。它被配置为一个
+值。第四部分是相位段2.在两个相位段之间，定位采样点。如果位定时设置将采样点移动到位的结尾，则传播段被放大，
+以便可以实现更长的网络。如果采样点在另一个方向配置，则重新同步功能会增加。
+
+所有连接的CAN节点的采样点应该相同。然而，在实践中，如果采样点区别不大就足够了。汽车行业为SAE J2284系列中的
+位定时设置指定了一些建议。对于CANopen网络，应使用CiA 301中给出的建议。采样点应为位时间的87.5％。对于大多数
+指定的比特率，允许85％至90％的范围。当然，公差范围越大，网络的最大可能长度越短。
+
+
+
+
+//说明：
+1、对于BS1和BS2以及SJW的不正确配置可能导致ACK ERR等奇怪的硬件错误
+2、不正确的波特率配置导致通讯失败
+

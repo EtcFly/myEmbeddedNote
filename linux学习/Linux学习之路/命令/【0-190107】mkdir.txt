@@ -1,0 +1,30 @@
+mkdir命令使用
+
+用途：创建目录
+mkdir格式: mkdir [option] directory
+
+[option]:
+   -m: 创建文件的同时指定文件权限
+   -p: 如果父目录不存在将创建父目录
+   -v: 创建文件的时候同时打印一条信息
+   -z: 【----暂不知道何用途----】
+   
+使用举例：
+-m:
+   1、创建目录tmp并指定为文件拥有者可读写、组用户和组外用户可读。
+     mkdir -m 644 tmp
+   2、多个文件目录的创建
+     mkdir -m 644 tmp temp1 temp2   
+-p:
+   1、在tmp目录下创建kk子目录
+     mkdir -p tmp/kk
+-v:
+   mkdir -v tmp
+   系统打印信息: mkdir: created directory 'tmp'
+   
+附加扩展:
+   1、在tmp目录下创建a_a, a_b, a_c, b_a, b_b, b_c目录
+   命令:mkdir -p tmp/{a,b}_{a,b,c}  #abc之间以,隔开，不允许空格
+   
+   
+

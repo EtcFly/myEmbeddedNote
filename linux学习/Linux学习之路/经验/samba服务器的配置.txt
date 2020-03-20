@@ -1,0 +1,55 @@
+1、linux端
+	1>安装samba客户端程序yum -y install samba
+	2>配置samba配置文件
+	/etc/samba/smb.conf
+	内容增加如下:
+	{
+	[work-share]
+		comment: work-share
+		path：/home/wylinux    //share path
+		public = yes
+		writable = yes
+		browseable = yes
+	}
+	3> 创建共享文件夹
+	mkdir /home/wylinux
+	设置共享属性
+	chmod ugo+rwx /home/wylinux
+
+	4>启动服务
+	service smb restart 重启服务
+	
+	5>添加用户和密码
+　　smbpasswd -a 添加用户（被添加用户必须是系统用户）
+　　smbpasswd -d 冻结用户 （这个用户不能用了）
+　　smbpasswd -e 恢复用户 （将冻结的用户解冻）
+　　smbpasswd -n 将用户密码设置为空 
+　　smbpasswd -x 删除用户
+
+ps：注意事项
+  1、关闭防火墙 service iptables stop 否则可能无法连接smb服务器
+       service iptables stop --暂时关闭
+	   service iptables off --永久关闭
+       service iptables status  --查看防火墙的状态  
+	   
+  2、设置selinux为disable
+    路径/etc/sysconfig
+	修改配置selinux
+	不修改可能可以连接smb服务器但是没有文件访问权限、
+	
+  3、设置samba服务开机自启动
+	chkconfig smb on  --下次开机smb服务器将自动启动
+	
+win10:
+	1、打开局域网文件共享
+	2、打开 "控制面板\程序\程序和功能" 
+	    -> 启动和关闭window功能  --> 勾选SMB文件共享和SMB直通
+	3、运行-> "gpedit.msc" ->管理模板 -> 网络 -> lanman工作站  -> 启动不安全的来宾访问 ->启动 
+	4、重启电脑
+	
+	
+参考链接：https://www.cnblogs.com/hxgoto/p/7071175.html
+          https://blog.csdn.net/maxzero/article/details/81410620
+	
+	
+	

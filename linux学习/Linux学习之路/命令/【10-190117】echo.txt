@@ -1,0 +1,24 @@
+echo命令使用
+
+用途：输出一行文本
+echo格式: echo [SHORT-OPTION]... [STRING] ...
+	      echo LONG-OPTION 
+
+[option]:
+    -n: 不输出尾部换行符
+	-e: 启用反斜线转义解释
+	-E: 不启用转义解释(default)
+	
+	使用-e后：
+	\\: 反斜杠
+	\a: 响铃
+	\b: 退格
+	\c: 不在产生输出
+	\e: 转义
+	\f: 换页
+	\n: 新行
+	\r: 回车
+	\t: 水平制表符
+	\v: 垂直制表符
+	\0NNN: 8进制字节
+	\xHH:  16进制字节HH

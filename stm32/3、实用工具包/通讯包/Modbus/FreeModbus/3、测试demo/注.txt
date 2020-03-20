@@ -1,0 +1,29 @@
+demo为接受采用RXNE中断信号来完成,而发送直接采用非中断方式。
+
+如果修改为中断方式，只需要将串口驱动文件替换如下
+
+void USART2_IRQHandler(void)
+{	
+	if (__HAL_UART_GET_IT_SOURCE(&huart2, UART_IT_TC)) {
+		__HAL_UART_CLEAR_PEFLAG(&huart2);
+		pxMBFrameCBTransmitterEmpty();
+	} else if (__HAL_UART_GET_IT_SOURCE(&huart2, UART_IT_RXNE)){
+		pxMBFrameCBByteReceived();
+		__HAL_UART_CLEAR_PEFLAG(&huart2);
+	}
+}
+
+void vMBPortSerialEnable( BOOL xRxEnable, BOOL xTxEnable )
+{
+	if (xRxEnable) {
+		__HAL_UART_ENABLE_IT(&huart2, UART_IT_RXNE);
+	} else {
+		__HAL_UART_DISABLE_IT(&huart2, UART_IT_RXNE);
+	}
+
+	if (xTxEnable) {
+		__HAL_UART_ENABLE_IT(&huart2, UART_IT_TC);
+	} else {
+		__HAL_UART_DISABLE_IT(&huart2, UART_IT_TC);
+	}
+}

@@ -1,0 +1,403 @@
+1、下载littleFs的源码并添加
+2、定义
+// configuration of the filesystem is provided by this struct
+const struct lfs_config cfg = {
+    // block device operations
+    .read  = lfs_read,
+    .prog  = lfs_prog,
+    .erase = lfs_erase,
+    .sync  = lfs_sync,
+ 
+    // block device configuration
+    .read_size = LFS_READ_BUFF_SIZE,
+    .prog_size = LFS_WRITE_BUFF_SIZE,
+    .block_size = FLASH_SECTOR_SIZE,
+    .block_count = FLASH_TOTAL_SIZE,
+    .cache_size = LFS_READ_BUFF_SIZE,
+    .lookahead_size = 256,
+	.block_cycles = 500,
+};
+
+这个主要是提供littleFs文件系统的回调，用于对底层函数进行读写。
+
+const sfud_flash *flash_lfs;
+/**
+ *func:  向一个块指定地址的数据
+ *c:     内部配置结构指针,主要提供块大小及 c->block_size
+ *block: 需要写入的块id
+ *off:   本块的偏移量  单位Byte
+ *buffer:写缓存
+ *size:  写入的字节数
+ * 正常返回0  异常负数
+**/
+static int lfs_prog(const struct lfs_config *c, lfs_block_t block,
+		lfs_off_t off, const void *buffer, lfs_size_t size)
+{
+	if (flash_lfs == 0)
+	{
+		flash_lfs = sfud_get_device_table() + 0;
+		if (flash_lfs == 0) return -1;
+	}
+	
+	if (sfud_write(flash_lfs, (FLASH_LFS_OFFEST+block)*c->block_size+off, size, buffer) == SFUD_SUCCESS)
+	{
+		return 0;
+	}
+	
+	return -1;
+}
+
+/**
+ *func:  读取一个块指定地址的数据
+ *c:     内部配置结构指针,主要提供块大小及 c->block_size
+ *block: 需要读取的块id
+ *off:   本块的偏移量  单位Byte
+ *buffer:读缓存
+ *size:  读取的字节数
+ * 正常返回0  异常负数
+**/
+static int lfs_read(const struct lfs_config *c, lfs_block_t block,
+            lfs_off_t off, void *buffer, lfs_size_t size)
+{
+
+	if (flash_lfs == 0)
+	{
+		flash_lfs = sfud_get_device_table() + 0;
+		if (flash_lfs == 0) return -1;
+	}
+	if (sfud_read(flash_lfs, (FLASH_LFS_OFFEST+block)*c->block_size+off, size, buffer) == SFUD_SUCCESS)
+	{
+		return 0;
+	}
+	
+	return -1;
+}
+
+/**
+ *擦除指定地址的一个物理块
+ * c: 主要提供块大小 c->block_size
+ * block: 需要参数的块id
+ * 正常返回0  异常负数
+**/
+static int lfs_erase(const struct lfs_config *c, lfs_block_t block)
+{
+	if (flash_lfs == 0)
+	{
+		flash_lfs = sfud_get_device_table() + 0;
+		if (flash_lfs == 0) return -1;
+	}
+	
+	if (sfud_erase(flash_lfs, (FLASH_LFS_OFFEST+block)*c->block_size, 1) == SFUD_SUCCESS)
+	{
+		return 0;
+	}
+	
+	return -1;
+}
+
+ static int lfs_sync(const struct lfs_config *c)
+{
+	(void)c;
+	return 0;
+}
+
+3、是否提供malloc动态内存申请的函数，如果不提供的话需要在const struct lfs_config cfg中指定
+   read_buff和write_buff的指针值
+   
+4、测试
+   72M主频  1M文件读写   SPI FLASH MX25L256 256页写大小  4096块大小  SPI主频40MHz
+		读: 338kByte/s   写：129kByte/s
+		
+5、api介绍
+
+int lfs_format(lfs_t *lfs, const struct lfs_config *config); //格式化文件系统 第一次创建时需要格式化
+int lfs_mount(lfs_t *lfs, const struct lfs_config *config);  //挂载文件系统  挂载在不同硬件上lfs不同
+int lfs_unmount(lfs_t *lfs); //卸载文件系统
+int lfs_remove(lfs_t *lfs, const char *path); //删除指定目录或者文件  目录的话需要为空目录
+int lfs_rename(lfs_t *lfs, const char *oldpath, const char *newpath); //对目录或者文件进行重命名  目录的话需要为空目录
+int lfs_stat(lfs_t *lfs, const char *path, struct lfs_info *info); //获取文件或者目录信息  文件的话可以获取大小  目录只能获取名称
+lfs_ssize_t lfs_getattr(lfs_t *lfs, const char *path, //未知
+        uint8_t type, void *buffer, lfs_size_t size); 
+int lfs_setattr(lfs_t *lfs, const char *path,  //未知
+        uint8_t type, const void *buffer, lfs_size_t size);
+int lfs_removeattr(lfs_t *lfs, const char *path, uint8_t type); //未知
+int lfs_file_open(lfs_t *lfs, lfs_file_t *file,  //打开一个文件
+        const char *path, int flags);
+int lfs_file_opencfg(lfs_t *lfs, lfs_file_t *file, //暂未知
+        const char *path, int flags,
+        const struct lfs_file_config *config);
+int lfs_file_close(lfs_t *lfs, lfs_file_t *file); //关闭一个文件
+int lfs_file_sync(lfs_t *lfs, lfs_file_t *file);  //将文件从缓存中同步到硬件
+lfs_ssize_t lfs_file_read(lfs_t *lfs, lfs_file_t *file, //读取文件 并返回读取的大小  单位字节
+        void *buffer, lfs_size_t size);
+lfs_ssize_t lfs_file_write(lfs_t *lfs, lfs_file_t *file, //写文件  并返回写大小 单位Byte
+        const void *buffer, lfs_size_t size);
+lfs_soff_t lfs_file_seek(lfs_t *lfs, lfs_file_t *file, //设置文件偏移, 读写完文件如果不关闭,再次操作指针将在文件尾部
+        lfs_soff_t off, int whence);
+int lfs_file_truncate(lfs_t *lfs, lfs_file_t *file, lfs_off_t size); //截断文件, 默认截断未知从当前未知开始 大小为size
+lfs_soff_t lfs_file_tell(lfs_t *lfs, lfs_file_t *file); //返回文件当前偏移
+int lfs_file_rewind(lfs_t *lfs, lfs_file_t *file); //返回到文件头,及偏移地址为0 的位置
+lfs_soff_t lfs_file_size(lfs_t *lfs, lfs_file_t *file); //获取文件的大小
+int lfs_mkdir(lfs_t *lfs, const char *path); //创建一个目录 目录不支持/ETC/的形式  只支持/ETC
+int lfs_dir_open(lfs_t *lfs, lfs_dir_t *dir, const char *path); //打开一个目录
+int lfs_dir_close(lfs_t *lfs, lfs_dir_t *dir); //关闭一个目录
+int lfs_dir_read(lfs_t *lfs, lfs_dir_t *dir, struct lfs_info *info); //读取目录  依次读取可以实现目录中文件的遍历 最后一个返回失败
+int lfs_dir_seek(lfs_t *lfs, lfs_dir_t *dir, lfs_off_t off); //文件偏移设置,相对于目录偏移为0 的位置
+lfs_soff_t lfs_dir_tell(lfs_t *lfs, lfs_dir_t *dir); //返回文件或者目录的偏移 相对于当前目录的第一个文件
+int lfs_dir_rewind(lfs_t *lfs, lfs_dir_t *dir); //重新回到目录偏移为0的位置
+lfs_ssize_t lfs_fs_size(lfs_t *lfs); //获取文件系统使用大小
+int lfs_fs_traverse(lfs_t *lfs, int (*cb)(void*, lfs_block_t), void *data); //未知
+
+##扩展:
+littleFs一个目录中 结构为
+.
+..
+其他用户创建的文件
+
+
+
+
+##应用和测试
+// entry point
+int lfs_test(void) {
+    // mount the filesystem
+
+	
+    int err = lfs_mount(&lfs, &cfg);
+	
+mountAgain: 	
+    // reformat if we can't mount the filesystem
+    // this should only happen on the first boot
+    if (err) {
+        lfs_format(&lfs, &cfg);
+        if (lfs_mount(&lfs, &cfg) != LFS_ERR_OK)
+		{
+			printf("errCode is %d\n", err);
+			goto mountAgain;
+		}
+    }
+ 
+	static uint8_t littleFs_write[LFS_WRITE_BUFF_SIZE];
+	static uint8_t littleFs_read[LFS_READ_BUFF_SIZE];
+
+	
+	uint32_t size;
+	int res;
+	
+	char *s = "heel find test of little file system in 190906 with bawy by etcfly!";
+	#include "string.h"
+	
+	/****get file system remain size **/
+	printf("file system total remian Size:%d\n", FLASH_TOTAL_SIZE-lfs_fs_size(&lfs));
+	
+	/****** read/write test***/
+	/* write */
+	memcpy(littleFs_write, s, strlen(s));
+	if (lfs_file_open(&lfs, &file, "/1.txt", LFS_O_RDWR | LFS_O_CREAT) == LFS_ERR_OK) {
+		printf("littleFs open success!\n");
+		size = lfs_file_write(&lfs, &file, littleFs_write, strlen((char *)littleFs_write));
+		if (size == strlen((char *)littleFs_write)) {
+			printf("littleFs write success! fileSize:%d\n", lfs_file_size(&lfs, &file));
+			memset(littleFs_read, 0, sizeof(littleFs_read));
+			lfs_file_rewind(&lfs, &file);
+			size = lfs_file_read(&lfs, &file, littleFs_read, lfs_file_size(&lfs, &file));
+			if (size) {
+				printf("littleFs read success! fileSize:%d\n", strlen((char *)littleFs_read));
+				lfs_stat(&lfs, "/1.txt", &info_file);
+				printf("file:%s fileName:%s size:%d type:%d\n", littleFs_read, info_file.name, info_file.size, info_file.type);
+				} else printf("littleFs read fail! size:%d\n", size);			
+		} else printf("littleFs write fail!\n");
+		lfs_file_close(&lfs, &file);
+	}else printf("littleFs open fail!\n");
+	
+	/* read */
+	if (lfs_file_open(&lfs, &file, "/1.txt", LFS_O_RDWR) == LFS_ERR_OK) {
+		printf("littleFs open success!\n");
+		size = lfs_file_read(&lfs, &file, littleFs_read, lfs_file_size(&lfs, &file));
+		if (size == lfs_file_size(&lfs, &file)) {
+			printf("littleFs read success! fileSize:%d\n", strlen((char *)littleFs_read));
+			lfs_stat(&lfs, "/1.txt", &info_file);
+			printf("file:%s fileName:%s size:%d type:%d\n", littleFs_read, info_file.name, info_file.size, info_file.type);
+		} else printf("littleFs read fail!\n");
+		lfs_file_close(&lfs, &file);
+	}else printf("littleFs open fail!\n");
+	
+	/* rename a file */
+	if (lfs_rename(&lfs, "/1.txt", "/1->2.txt") == LFS_ERR_OK)
+	{
+		if (lfs_stat(&lfs, "/1.txt", &info_file) == LFS_ERR_OK)	{
+			printf("rename fail!\n");
+		} else printf("can't find 1.txt file\n");
+		
+		if (lfs_stat(&lfs, "/1->2.txt", &info_file) == LFS_ERR_OK)	{
+			printf("rename ok!\n");
+			lfs_file_open(&lfs, &file, "/1->2.txt", LFS_O_RDONLY);
+			size = lfs_file_read(&lfs, &file, littleFs_read, lfs_file_size(&lfs, &file));
+			if (size) {
+				printf("file:%s\n", littleFs_read);
+			} else printf("file read fail\n");
+			lfs_file_close(&lfs, &file);
+		} else 	printf("rename fail!\n");
+	} else printf("rename fail ! maybe can't find 1.txt!\n");
+	
+	/* remove file (delete file)*/
+	if (lfs_remove(&lfs, "/etcfly") != LFS_ERR_OK)	{
+		printf("remove /etcfly fail\n");
+	} else printf("remove /etcfly ok!");
+	
+	
+	res = lfs_mkdir(&lfs, "/etcfly");
+	if (res == LFS_ERR_OK)
+	{
+		printf("mkdir /etcfly success!\n");
+		res = lfs_remove(&lfs, "/etcfly");
+		if (res != LFS_ERR_OK)	{
+			printf("remove /etcfly/ fail errCode:%d\n", res);
+		} else printf("remove /etcfly success!\n");
+	} else printf("mkdir /etcfly fail errCode:%d\n", res);
+	
+	/* file offest test */
+	lfs_file_open(&lfs, &file, "wy.txt", LFS_O_RDWR | LFS_O_CREAT);
+	int offest = lfs_file_seek(&lfs, &file, 12, LFS_SEEK_SET);
+	printf("offest is %d\n", offest);
+	printf("get offest is %d\n", lfs_file_tell(&lfs, &file));
+	lfs_file_close(&lfs, &file);
+	
+	
+	/* Truncates file test */
+	lfs_file_open(&lfs, &file, "/1->2.txt", LFS_O_RDWR);
+	memset(littleFs_read, 0, sizeof(littleFs_read));
+	lfs_file_read(&lfs, &file, littleFs_read, lfs_file_size(&lfs, &file));
+	lfs_stat(&lfs, "/1->2.txt", &info_file);
+	printf("file:%s fileName:%s\n", littleFs_read, info_file.name);
+	
+	lfs_file_rewind(&lfs, &file);
+	lfs_file_truncate(&lfs, &file, 10);
+	lfs_file_sync(&lfs, &file);
+	memset(littleFs_read, 0, sizeof(littleFs_read));
+	lfs_file_read(&lfs, &file, littleFs_read, lfs_file_size(&lfs, &file));
+	lfs_stat(&lfs, "/1->2.txt", &info_file);
+	printf("file:%s fileName:%s size:%d\n", littleFs_read, info_file.name, info_file.size);
+	lfs_file_close(&lfs, &file);
+	
+	/*  directory file test */
+	/* 1、create a directory */
+	res = lfs_mkdir(&lfs, "/bdwy");
+	if (res == LFS_ERR_OK){
+		lfs_stat(&lfs, "/bdwy", &info_file);
+		printf("create /bdwy directory success! fileName:%s fileSize:%d type:%s\n", info_file.name, info_file.size, \
+									(info_file.type & LFS_TYPE_REG) ? "file" : "directory");
+	} else printf("directory /bdwy create fail!\n");
+	
+	/* 2、opendir and write file*/
+	res = lfs_dir_open(&lfs, &dir, "/bdwy");
+	if (res == LFS_ERR_OK) {
+		printf("open dir /bdwy success!");
+		printf("id:%d  pos:%d type:%d\n",  dir.id, dir.pos, dir.type);
+		if (lfs_file_open(&lfs, &file, "2.txt", LFS_O_RDWR | LFS_O_CREAT) == LFS_ERR_OK) {
+			if (lfs_file_write(&lfs, &file, "i'm hello world!", sizeof"i'm hello world!")) {
+				lfs_file_close(&lfs, &file);
+				printf("2.txt file write ok!\n");
+			} else printf("2.txt file write fail!");
+		} else printf("file 2.txt create fail!\n");
+	}
+	lfs_dir_close(&lfs, &dir);
+	
+	/*  test result: There are no relative paths to file systems */ 
+	res = lfs_file_open(&lfs, &file, "/bdwy/2.txt", LFS_O_RDWR | LFS_O_EXCL);
+	if (res == LFS_ERR_OK)
+	{
+		printf("2.txt open success!\n");
+		lfs_file_close(&lfs, &file);
+	} else {
+		printf("2.txt open fail! errCode:%d\n", res);
+		res = lfs_file_open(&lfs, &file, "2.txt", LFS_O_RDWR);
+		if (res == LFS_ERR_OK)
+		{
+			if (lfs_file_read(&lfs, &file, littleFs_read, sizeof(littleFs_read)))
+				printf("open file Success file:%s \n", littleFs_read);
+		
+			lfs_file_close(&lfs, &file);
+			} else printf("2.txt open file errCode:%d\n", res);
+	}
+	
+	/* Traversal folder */
+	lfs_file_open(&lfs, &file, "/bdwy/hello.txt", LFS_O_CREAT);
+	lfs_file_close(&lfs, &file);
+	lfs_file_open(&lfs, &file, "/bdwy/keil.csv", LFS_O_CREAT);
+	lfs_file_close(&lfs, &file);
+	lfs_file_open(&lfs, &file, "/bdwy/mov.cobj", LFS_O_CREAT);
+	lfs_file_close(&lfs, &file);
+	lfs_file_open(&lfs, &file, "/bdwy/ls.cs", LFS_O_CREAT);
+	lfs_file_close(&lfs, &file);
+	
+	lfs_dir_open(&lfs, &dir, "/bdwy");
+	while (1) {
+		size = lfs_dir_read(&lfs, &dir, &info_file);
+		if (size) {
+			res = lfs_file_open(&lfs, &file, "ls.cs", LFS_O_RDWR);
+			if (res == LFS_ERR_OK){
+				printf("open file success \n");
+				} else printf("errCode:%d\n", res);
+			printf("size is %d fileName:%s size:%d type:%d\n", size, info_file.name, info_file.size, info_file.type);
+		} else break;
+	}
+	printf("file read again!\n");
+	lfs_dir_seek(&lfs, &dir, 1);
+	while (1) {
+		size = lfs_dir_read(&lfs, &dir, &info_file);
+		if (size) {
+			printf("size is %d fileName:%s size:%d type:%d\n", size, info_file.name, info_file.size, info_file.type);
+			printf("offest:%d\n", lfs_dir_tell(&lfs, &dir));
+		} else break;
+	}	
+	lfs_dir_close(&lfs, &dir);
+	
+	/**************************************file read/write speed test start**************************************/
+	
+	uint32_t tim_start, tim_end;
+	uint32_t fileSize = 0;
+	
+	if (lfs_file_open(&lfs, &file, "/writeSpeed.txt", LFS_O_CREAT | LFS_O_RDWR | LFS_O_TRUNC) != LFS_ERR_OK) printf("file writeSpeed.txt open fail！\n");
+	lfs_file_sync(&lfs, &file);
+	lfs_stat(&lfs, "/writeSpeed.txt", &info_file);
+	printf("fileName: %s fileSize:%d\n", info_file.name, info_file.size);
+	
+	lfs_file_rewind(&lfs, &file);
+	printf("write time tick start:%d\n", tim_start = HAL_GetTick());
+	for (uint16_t i=0; i<4*1024; i++)
+	{	
+		if (lfs_file_write(&lfs, &file, littleFs_write, LFS_WRITE_BUFF_SIZE) != LFS_WRITE_BUFF_SIZE) {
+			printf("write fail index:%d\n", i);
+			break;
+		}
+	}
+	lfs_file_sync(&lfs, &file);
+	printf("write time tick end:%d \n", tim_end = HAL_GetTick());
+	lfs_stat(&lfs, "/writeSpeed.txt", &info_file);
+	fileSize = info_file.size;
+	printf("fileName:%s fileSize:%d writeSpeed:%d\n", info_file.name, info_file.size, (int)(fileSize*1.0f*1000/(tim_end-tim_start)));
+	
+	lfs_file_rewind(&lfs, &file);
+	printf("read time tick start:%d\n", tim_start = HAL_GetTick());
+	for (uint16_t i=0; i<4*1024; i++)
+	{	
+		if (lfs_file_read(&lfs, &file, littleFs_read, LFS_READ_BUFF_SIZE) != LFS_READ_BUFF_SIZE) {
+			printf("read fail index:%d\n", i);
+			break;
+		}
+	}
+	printf("read time tick end:%d\n", tim_end = HAL_GetTick());
+	lfs_stat(&lfs, "/writeSpeed.txt", &info_file);
+	fileSize = info_file.size;
+	printf("fileName:%s fileSize:%d readSpeed:%d\n", info_file.name, info_file.size, (int)(fileSize*1.0f*1000/(tim_end-tim_start)));
+	lfs_file_close(&lfs, &file);
+	
+	/**************************************file read/write speed test end **************************************/
+	lfs_unmount(&lfs);
+	return 0;
+}
+
+
+##资源消耗
+   典型值:  flash: 24.3kByte    RAM: 1KByte

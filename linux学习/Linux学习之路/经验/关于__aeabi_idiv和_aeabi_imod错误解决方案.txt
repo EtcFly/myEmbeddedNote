@@ -1,0 +1,22 @@
+错误:
+    undefine reference to '__aeabi_idiv' undefine reference to '__aeabi_idivmod
+	undefined reference to `__aeabi_uidivmod
+	
+出现场景:
+	1、在S3C2440裸机开发的时候,当使用 "除法" 或者 "取余" 运算符的时候出现上述错误
+	
+原因分析:
+    1、S3C2440这类的arm核所支持的为精简指令集,其没有硬件除法和取余指令
+	
+解决：
+	解决方案有2个
+	1、使用gcc编译器实现的软件除法
+		在链接的时候添加-lgcc -L/libgcc.a的地址
+		GCC_LIBS := -lgcc -L/work/tools/gcc-3.4.5-glibc-2.3.6/lib/gcc/arm-linux/3.4.5
+		如：arm-linux-ld  -o test.o test.c $(GCC_LIBS)
+		有的时候需要实现raise函数,编写一个空的函数即可
+		void raise(void)
+		{
+		}
+		但是需要注意,尤其是初学者,这个及时变量必须放在链接的最后,否则错误依旧,放置位置如上
+	2、自己使用其他运算操作 编写除法操作函数

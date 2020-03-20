@@ -1,0 +1,40 @@
+/**********************************************************************
+Note： 汪洋  2018/11/17   星期六   天气雨    心情：任重
+***********************************************************************/
+
+在linux下，普通用户不能像root用户一样拥有超级用户权限，这与windows显然不同，windows用户默认
+Administration, 其权限相当于linux中的root权限，这也是为什么win中更加容易中各种病毒，
+因此在执行一些高权限的任务的时候，Linux需要管理员授权。
+一般有两种方式：
+ 1、使用su -命令 快速切换到root权限，此时需要输入root用户密码，即可进入root权限。
+   此时用户就是root用户，但是其所属的用户组任然为原用户组，可以通过如下命令来查看
+   1>    # whoami
+         >> EtcFly
+   2>    # who am i
+         >> EtcFly  tty1    2018-11-17  10:59
+   或者  #  who              
+         >> EtcFly  tty1    2018-11-17  10:59
+注意:命令who和who am i是可以区分转换前用户的，及即使转为root权限，其任然返回原用户EtcFly,
+    而who am i则会返回root
+    
+2、使用sudo来以root权限运行后面的命令
+  如 sudo vim main.c        //以root权限使用vim编辑器打开main.c文件
+  
+  但是在安装linux的时候，useradd命令添加的用户大多情况下是没有sudo权限的，因此需要用户手动
+授权，当然授权前必须是root用户才有权限操作。
+普通用户操作如下:
+1>   $ su -                 //转到root权限 并进入/root目录
+    >> passwd:              //要求输入root用户密码
+    # cd /etc               //转入etc配置目录
+    #ls -la sudoers         //查看sudoers文件权限是只读
+    #chmod 700 sudoers      //修改用户权限为可读写
+    #vim sudoers            //使用vim打开sudoers文件   
+                            //手动添加EtcFly ALL=(ALL) ALL  保存退出
+    #chmode 440 sudoers     //还原sudoers原文件属性
+    #exit                  //退出root
+    $ sudo vim main.c      //此时EtcFly用户就可以以sudo运行一些需要root权限的命令了
+    
+         
+
+   
+     

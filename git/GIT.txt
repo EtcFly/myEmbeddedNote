@@ -1,0 +1,153 @@
+﻿git的安装
+   1、linux下git安装
+      sudo apt-get install git 
+   2、win的安装
+      下载git双击安装,运行git bash的cmd窗口
+	 
+git的配置(初次安装时需要设置)
+	git config --global user.name "EctFly"
+	git config --global user.email "EctFlyWy@126.com"
+
+git的基本操作
+1、git的四种状态：未跟踪状态、已修改状态、未修改状态、暂存状态
+
+未跟踪状态:仓库中没有进行跟踪的文件状态为未跟踪状态。
+以修改状态: 文件修改但是没有暂存的状态
+未修改状态: 仓库拷贝后没有修改后的状态或者commit后的状态都是未修改状态。
+暂存状态: 文件git add 后的状态(此时commit后保存为历史记录，及一个新的版本)
+
+git的基本命令
+git init //创建一个仓库
+git add //添加文件或者目录到仓库、或者将修改的文件暂存到暂存状态
+  {
+    git add <fileName> //添加指定文件
+	git add .  #添加所有文件
+  }
+git status //获取文件状态
+  {
+    git status -s //简单信息输出
+	  {
+	     ??: 未跟踪的文件
+	     A: 初次添加到暂存区
+		 M:文件修改但是没有放到暂存区
+		 M:文件被修改并放入暂存区
+		 MM: 文件放入暂存区后再次被修改
+	  }
+	忽略文件
+   {
+         文件.gitignore 的格式规范如下：
+             所有空行或者以#开头的行都会被Git忽略。
+             可以使用标准的 glob 模式匹配。
+             匹配模式可以以（/）开头防止递归。
+             匹配模式可以以（/）结尾指定目录。
+             要忽略指定模式以外的文件或目录,可以在模式前加上惊叹号（!）取反。 
+			 
+       所谓的glob模式是指Shell所使用的简化了的正则表达式。星号（*）匹配零个或多个
+       任意字符;[abc] 匹配任何一个列在方括号中的字符（这个例子要么匹配一个 a，要么
+	   匹配一个 b，要么匹配一个 c）；问号（?）只匹配一个任意字符；如果在方括号中使
+	   用短划线分隔两个字符，表示所有在这两个字符范围内的都可以匹配（比如 [0-9] 表
+	   示匹配所有 0 到 9 的数字）。 使用两个星号（*) 表示匹配任意中间目录，
+	   比如`a/**/z` 可以匹配 a/z, a/b/z 或 `a/b/c/z`等。			 
+   }	
+  } 
+git版本回退  git reset --hard HEAD^ 回滚到上一个版本
+             git reset --hard HEAD^^ 回滚到上上个版本
+			 git reset --hard HEAD~n 回滚到n前个版本
+			 git reset --hard <id>//回滚到指定id版本
+			 那如何查询id呢?
+			 git reflog即可
+
+修改撤销:
+场景1:当你改乱了工作区某个文件的内容,想直接丢弃工作区的修改时,用命令git checkout -- file。
+场景2:当你不但改乱了工作区某个文件的内容,还添加到了暂存区时,想丢弃修改,分两步,第一步用命
+     令git reset HEAD <file>，就回到了场景1，第二步按场景1操作。
+场景3:已经提交了不合适的修改到版本库时，想要撤销本次提交，参考版本回退一节，不过前提是
+     没有推送到远程库。			 
+	 
+git文件的删除:
+   1、误删:git文件误删后,由于其还是存在于版本库中,因此可以很容易的恢复.
+       git checkout -- readme; #每一次都是从版本区直接覆盖工作区  
+   2、彻底删除  
+       git rm readme #此时文件移除版本区, 也将彻底删除
+	   git commit
+	   
+	总结:1、如果使用git checkout 指令,如果此时文件在暂存区存在,那么使用暂存区来覆盖
+	     2、如果此时暂存区不存在该文件，那么使用版本库中的文件覆盖
+	   
+			 
+创建git分支
+   分支查询: git branch
+   创建分支: git branch dev #创建dev分支
+   切换分支: git checkout dev #切换到dev分支
+   创建并切换分支: git checkout -b dev 
+   删除分支: git branch -d dev   
+   查看分支图: git log --graph
+   合并分支: git merge dev #合并dev到当前分支 <如果可能将执行快速合并>
+             git merge --no-ff -m "info" dev #禁止快速合并 合并时自动commit
+   
+   注:
+    1、当创建一个分支以后,如果没有add以及commit过，但是对文本进行了修改，此时master内容
+      会显示被修改。因为此时的指针都是指向mster。
+	2、当分支创建后,实现快速合并，如果此时删除dev分支,可能丢失一些版本信息。
+       如:dev分支从master分支下来,此时在dev分支执行了3次commit,然后合并到mater分支，此时若删除dev分支,
+          那么在dev分支上的commit将全部丢失，只有结果合并到mater分支
+    3、针对2中的问题,禁止快速合并
+       git merge --no-ff -m "branch merge" dev
+	   此时将在master分支上向前commit一次，此时即使删除dev分支也可以保存dev分支信息
+	  
+	  
+查看分支图以及版本记录：
+	查看版本记录:git log
+	图形化查看版本记录: git log --graph
+	查看历史版本记录: git reflog 
+	
+Stash暂存现场：
+	git stash:暂存当前分支的状态--> 此时可以从事其他紧急任务
+	git stash list: 列出当前状态的暂存列表
+	git stash pop: 恢复数据并删除stash暂存数据，其相当于
+	                    1、git stash apply: 恢复数据 2、git stash drop:删除暂存
+						
+分支的强制删除:
+	git branch -D <branch_name> :删除分支branch_name
+	
+//远端的Git版本上传和提交暂时不考虑	
+关联远端仓库:
+   1、创建SSH密匙 
+      ssh-keygen -t rsa -C "youremail@example.com"
+   2、设置远端仓库的SSH公匙,并创建远端空仓
+   3、创建本地仓库
+      git init
+   4、关联远端仓库
+      git remote add origin git@github.com:EtcFly/git.git  #git为远端同步仓的名称
+   5、数据更新到远端仓库
+      git push -u origin master
+   6、以后更新到远端仓
+      git push origin master   
+   
+从远端仓库克隆:
+   1、git clone <git_addr> 
+   2、git clone <https_addr>    
+
+远程协作多分支结构:
+	git push orgin <branch_name>:推送自己的修改
+	git remote -v:查看远端版本库信息
+	git pull: 抓取远端的提交
+	
+
+关于github上与原仓库同步
+	1、git remote add <name> <原仓库url>
+	2、git remote -v查看是否成功添加
+	3、git fetch <name> //原仓库更改数据获取到本地
+	4、git checkout master //切换到master分支
+	5、git merge <name>/master //合并新的更改到master分支
+	6、git push origin/master //上传到自己的仓库
+
+	注: 有的时候fetch和merge合并到master可以合并为一条指令
+	git pull <name> master
+	
+	
+	
+	
+
+	
+	  

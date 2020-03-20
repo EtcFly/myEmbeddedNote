@@ -1,0 +1,27 @@
+在ucos中调用printf调试浮点数的时候，在内存中表示正确，但是打印数据就都为0.00，其他整形数据
+表示正常。定义了一个float类型的变量i，在内存中的数据是这样的，如下图所示：
+显示内存正常，但是打印的时候，会发现打印结果是-2.00到2.00左右变化。
+
+如下为解决方案：
+1、IAR下的解决方案：（未经测试） 通过#pragma data_alignment指定对齐字节数
+例如：
+
+	#pragma data_alignment=8
+	OS_STK Task1_LED1_Stk[Task1_LED1_Stk_Size];
+	#pragma data_alignment=8
+	OS_STK Task2_backlight_Stk[Task2_backlight_Stk_Size];
+2、Keil MDK下的解决方案：（亲测可用） 在任务堆栈声明前面加入强制八字节对齐命令，如下：
+
+	__align(8) static OS_STK  TaskEquipmentStk[TASK_EQUIPMENT_STK_SIZE]; 		   	//任务堆栈
+	__align(8) static OS_STK  TaskUartRcvStk[TASK_UARTRCV_STK_SIZE];
+	__align(8) static OS_STK  TaskFileRcvStk[TASK_FILERCV_STK_SIZE];
+	__align(8) static OS_STK  TaskFtpStk[ TASK_FTP_STK_SIZE ];
+	__align(8) static OS_STK  TaskErrorRateRS485Stk[ TASK_ERROR_RATE_RS485_STK_SIZE ];
+
+原因详解
+这事儿的历史在于ARM本身不支持非对齐数据存取；因此在有了64Bit的数据操作指令后，指令要求8字节对齐。
+进而，在编译器的某个版本之后（RVCT3？），AAPCS就要求堆栈8字节对齐。
+是先有8字节对齐的AAPCS，然后才有的CM3。先后顺序要注意。CM3 r2p0之前，自动压栈也不要求8对齐，r2p0好像才是强制对齐的。
+printf的8对齐是C运行库要求的，和硬件无关，C RTL手册有写，可以去阅读。其根源在于AAPCS要求；而AAPCS根源在于LDRD这类指令。
+换句话，未来如果128Bit数据操作有了，ARM还不支持非对其，那AAPCS可能升级为16字节对齐。
+供参考，CM3和C-RTL对齐的问题。

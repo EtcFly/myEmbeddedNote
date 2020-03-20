@@ -1,0 +1,16 @@
+﻿1、指令扩充
+   1>__align(n)  n只能去1、2、4、8，且只能向上扩展。及一个2字节对齐的变量只能强制为4或者8字节对齐。
+   2>__alignof__(type) //一个类型的对齐方式
+     __alignof__(expt) //expt为一个左值
+	 
+  如 uint8_t retVal(void)
+     {
+	    return __alignof__(int); //返回int的对齐方式  结果为4
+	 }
+	 
+   3> __inline //函数合适就内联
+   4> __int64 //long long类型
+   5> __weak //函数或变量即使没有使用  也不会解析   
+   6> __attribute__()
+
+uint8_t a[100] __attribute__((at(0X20001700)));指定数组的基地址

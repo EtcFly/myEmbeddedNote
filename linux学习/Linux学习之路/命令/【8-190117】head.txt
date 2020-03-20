@@ -1,0 +1,17 @@
+head命令使用
+
+用途：输出文件的开始部分
+head格式: head [option] ... [file] ...
+
+[option]:
+   -c, --bytes=[-]k: 输出文件的开头kByte字节，如果以-开头，输出文件除了最后kByte
+       以外的其他字节。
+   -n, --lines=[-]k: 打印文件的前k行，加上-打印除了最后k行的所有内容。
+   -q, --quiet, -silent: 不打印给定文件名的首部
+   -v, --verbose: 总是打印给定文件名的首部
+   
+   注：-c中的k可以为b:512  KB:1000 K:1024 MB:1000*1000
+    M:1024*1024 GB 1000*1000*1000 G:1024*1024*1024
+	
+举例:
+  1、head -cK helloworld.c  #打印helloworld.c文件的前1024byte	

@@ -1,0 +1,18 @@
+rm命令使用
+
+用途：移除文件或者路径
+rm格式: rm [option] ... file ...
+
+[option]:
+    -f, --force: 忽略不存在的文件和参数  而不进行任何提示
+    -i: 移除任何文件前给出提示
+	-I: 在删除超过三个文件或者递归删除时给出一次提示, 而不是像-i每一次都提示
+	--interactive[=WHEN]: 根据WHEN给出提示: 1、never(从不) 2、once(一次) 3、always(总是)
+	                     没有提供WHEN参数默认为:always
+	--one-file-system: 【----暂不知道何用途----】
+	-no-preserve-root: 对/不特别对待
+	--preserve-root:   不移除/ (default)
+	-r, -R, --recursive: 删除目录或者递归删除目录及其子目录
+	-d, --dir: 删除空的目录
+	-v, --verbose: 对每一个操作给出操作说明
+	  

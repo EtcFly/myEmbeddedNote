@@ -1,0 +1,27 @@
+/********************************************************************************
+note: 汪洋 2018/11/19  21:04   星期一  天气：阴转所云  心情：矛盾复杂
+**********************************************************************************/
+
+linux下文件的解压和压缩
+1、tar
+NAME
+       tar - manual page for tar 1.26
+SYNOPSIS
+       tar [OPTION...] [FILE]...
+描述：tar可一次保存多个文件到单个文件，而且可以从这个单个文件中
+恢复单个文件。
+
+举例：
+   tar -cf  archive.tar foo bar //由foo, bar来创建archive.tar
+   tar -tvf archive.tar //列举archive.tar中的所有文件
+   tar -xf archive.tar //从archive.tar中提取所有文件
+   
+主要操作模式：
+  -A, --catenate, --concatenate  //将tar文件追加到存档中
+  -c, --create   //创建一个存档
+  -d,--diff, --compare  //查找存档和文件系统的区别
+  --delete //从存档中删除
+  -r, --append //追加文件到一个存放后边
+  -t, --list //列出存档的内容
+   
+      

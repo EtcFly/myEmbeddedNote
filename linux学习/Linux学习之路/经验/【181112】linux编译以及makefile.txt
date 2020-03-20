@@ -1,0 +1,23 @@
+
+创建一个文件.txt
+vim 1.txt
+输入内容
+:wq保存即可
+
+在没有root权限的情况下  如ubuntu中 需要sudo vim 1.txt获取root权限
+
+
+编译main1.c main2.c main3.c
+gcc main1.c main2.c main3.c -o all_in_one
+all_in_one表示生成的二进制文件名  该命令每一次都重新编译main1.2.3并连接为可执行文件
+
+单独编译单个文件main.c
+gcc -c main.c 生成main.o
+
+手动连接main1.o main2.o
+gcc  main1.o main2.o  -o all_in_one
+
+
+
+
+

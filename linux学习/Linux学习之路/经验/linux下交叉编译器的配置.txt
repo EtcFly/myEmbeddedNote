@@ -1,0 +1,22 @@
+安装环境:CentOS 7.2  gcc版本:arm-linux-gcc 4.4.3
+
+1、查看缺少的库的依赖
+	yum whatprovides <lib_name>
+	
+2、多版本冲突
+	1> yum update <lib_name>
+		分别安装冲突的版本
+	2> 禁止指定版本库的多版本保护功能
+	   如:yum install --setopt=protected_multilib=false zlib
+	   
+	   
+安装环境：
+	1、下载arm-linux-gcc压缩包,解压到特定目录
+	2、1-添加路径到系统环境变量(用于所有用户)
+       2-添加的特定用户的bashrc文件中(仅仅本用户可用)
+	   
+	3、测试arm-linux-gcc -v查看是否可用
+	    这过程需要安装一些缺少的库
+		
+	4、如果是系统环境变量的改变   需要reboot
+	

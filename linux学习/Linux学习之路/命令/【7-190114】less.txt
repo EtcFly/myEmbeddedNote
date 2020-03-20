@@ -1,0 +1,16 @@
+less命令使用
+
+用途：文件过滤分页显示到屏幕
+less格式: less [option] [file] ...
+
+[option]:
+   -bn,--buffer=n: 设置缓冲区大小 n表示缓冲区的大小(单位1024Byte) 默认64k, -1表示没有限制
+   -c, --clear-screen: 全屏重绘 而不是滚动显示
+   -e, --quit-at-eof: 文末自动退出(在第二次EOF)
+   -E, --QUIT-AT-EOF: 文末自动退出 (在第一次EOF)
+   -i: 忽略配对是关键字的大小写
+   -N: 显示每行行号
+   -m: 显示类似more命令的百分比  
+   -o: 将less输出的内容在指定文件中保存 格式为: less -okeil hello.c 保存到keil文件
+   -Q: 不使用警告音
+   

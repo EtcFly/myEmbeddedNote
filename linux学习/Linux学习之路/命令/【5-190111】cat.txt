@@ -1,0 +1,39 @@
+cat命令使用
+
+用途：连接文件并打印到标准输出
+cat格式: cat [option] ... [file] ...
+
+[option]:
+   -A, -show-all: 等价于-VET
+   -b, -number-no: 和-n类似，只是不对空白行编号
+   -e: 等价于-VE
+   -E, --show-ends: 在每行结尾显示$符号 
+   -n, --number: 对每行从1编号
+   -s, --squeeze-blank: 当遇到连续两行及以上空白行替换为一行空白行
+   -t: 等价于-vT 
+   -T， --show-tabs: 将tab字符显示为^I
+   -v, -show-nonprinting: 使用^和M-符号，除了LFD和TAB
+   
+注: 
+   >  操作符表示的是替换, 如cat file > file1 表示file内容替换file1内容
+   >> 操作符表示追加, 如cat file > file1表示在file1文件内容后面追加file内容   
+   
+举例:
+   1、-n参数的使用
+      $cat -n hello > hello1   #将已存在的hello文件内容写入hello1文件(hello1文件不存在
+	                 将自动创建) 并在每一行前面从1开始编号(空行也编号)
+   2、-b参数的使用  
+      $cat -b hello > hello1  #不对空行编号
+   3、-E参数的使用
+      $cat -E hello > hello1  #在每一行的尾部加上$符号(包括空行)
+   4、清除一个文档内容
+      $cat /dev/null > hello  #清空hello文件
+   5、用来制作镜像文件。例如要制作软盘的镜像文件，将软盘放好后输入
+      $cat /dev/fd0 > OUTFILE        (OUTFILE为输出文件名)
+   6、把image file 写到软盘，输入
+      $cat IMG_FILE > /dev/fd0       (IMG_FILE为镜像文件名)
+	  
+注:
+   1、若从镜像文件写回 device 时，device 容量需与相当。	  
+
+   

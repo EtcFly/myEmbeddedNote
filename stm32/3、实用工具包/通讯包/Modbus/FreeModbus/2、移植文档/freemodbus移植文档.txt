@@ -1,0 +1,344 @@
+
+/***************** FreeModbus 裸板移植 **********************/
+步骤: 
+	1、下载FreeModbus源码(这里使用的V1.6版本)
+	2、添加串口驱动和定时器驱动
+	3、编写事件模块
+	4、编写modbus处理事务,初始化modbus(包括寄存器的访问回调等)
+	5、测试modbus协议的读写
+	
+	
+	
+1、下载FreeModbus源码,V1.6版本文件结构如下
+	.
+	|\_ demo   相关的其他平台的移植和测试demo
+	|\_ doc    相关的说明文档
+	|\_ modbus modbus源码
+	|    |
+	|    |\_ ascii     ascii通讯相关的源码
+	|    |\_functions  封装的对底层寄存器访问接口
+	|    |\_include    主要的一些头文件
+	|    |\_rtu        rtu通讯相关的源码
+	|    |\_tcp        tcp通讯相关的源码
+	|    \__mb.c       modbus应用层初始化等接口
+	\__ tools          相关的工具脚本
+	
+	
+2、添加串口驱动和定时器驱动
+	2.1 添加串口驱动
+		串口驱动需要包含串口的初始化, 发送和接受使能失能接口, 串口的发送、接受接口等
+		
+		2.1.1 串口的初始化
+			BOOL xMBPortSerialInit( UCHAR ucPORT, ULONG ulBaudRate, UCHAR ucDataBits, eMBParity eParity )
+			{
+			  switch (ucPORT)
+			  {
+				  case 1: huart2.Instance = USART1; break;
+				  case 2: huart2.Instance = USART2; break;
+				  case 3: huart2.Instance = USART3; break;	
+				  default : return FALSE;
+				  
+			  }
+			  
+			  huart2.Init.BaudRate = ulBaudRate;
+			  huart2.Init.StopBits = UART_STOPBITS_1;
+			  huart2.Init.Mode = UART_MODE_TX_RX;
+			  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+			  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+			  
+			  switch (eParity)
+			  {
+				  case MB_PAR_NONE: huart2.Init.WordLength = UART_WORDLENGTH_8B;
+									huart2.Init.Parity = UART_PARITY_NONE; break;
+				  case MB_PAR_ODD:  huart2.Init.WordLength = UART_WORDLENGTH_9B; 
+									huart2.Init.Parity = UART_PARITY_ODD; break;
+				  case MB_PAR_EVEN: huart2.Init.WordLength = UART_WORDLENGTH_9B; 
+									huart2.Init.Parity = UART_PARITY_EVEN; break;
+			  }
+
+			  if (HAL_UART_Init(&huart2) != HAL_OK)
+			  {
+				
+			  }
+			   __HAL_UART_GET_FLAG(&huart2, UART_FLAG_TC);
+
+			   vMBPortSerialEnable( TRUE, FALSE );
+			   HAL_NVIC_SetPriority(USART2_IRQn, 1, 2);
+			   HAL_NVIC_EnableIRQ(USART2_IRQn);
+			  
+				return TRUE;
+			}
+	
+		2.1.2 发送和接受使能失能接口
+			void vMBPortSerialEnable( BOOL xRxEnable, BOOL xTxEnable )
+			{
+				static uint16_t timeout = 0xff;
+				
+				if (xRxEnable) {
+					__HAL_UART_ENABLE_IT(&huart2, UART_IT_RXNE);
+				} else {
+					__HAL_UART_DISABLE_IT(&huart2, UART_IT_RXNE);
+				}
+
+				if (xTxEnable) {
+				//	__HAL_UART_ENABLE_IT(&huart2, UART_IT_TXE);
+					timeout  = 0xff;
+					while (!pxMBFrameCBTransmitterEmpty() && timeout--) //发送响应的数据
+					{
+						
+					}
+				} else {
+				//	__HAL_UART_DISABLE_IT(&huart2, UART_IT_TXE);
+				}
+			}
+			
+		2.1.3 串口的发送、接受接口
+			BOOL xMBPortSerialPutByte( CHAR ucByte )
+			{
+				if (HAL_UART_Transmit(&huart2, (UCHAR *)&ucByte, 1, 10) != HAL_OK)
+				{
+					return FALSE;
+				}
+				return TRUE;
+			}
+
+			BOOL xMBPortSerialGetByte( CHAR * pucByte )
+			{
+				if (HAL_UART_Receive(&huart2, (UCHAR *)pucByte, 1, 10) != HAL_OK)
+				{
+					return FALSE;
+				}
+				return TRUE;
+			}
+			
+		2.1.4 其他接口
+			void xMBPortSerialClose( void )
+			{
+				vMBPortSerialEnable(FALSE, FALSE);
+				__HAL_UART_DISABLE(&huart2);
+			}
+			
+			void USART2_IRQHandler(void)
+			{	
+				if (__HAL_UART_GET_IT_SOURCE(&huart2, UART_IT_RXNE)) {
+					pxMBFrameCBByteReceived();
+					__HAL_UART_CLEAR_PEFLAG(&huart2);
+				}
+			}
+			
+3、定时器驱动
+	3.1 编写50us定时器初始化
+		BOOL xMBPortTimersInit( USHORT usTim1Timerout50us )
+		{
+		  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+		  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+		  __HAL_RCC_TIM2_CLK_ENABLE();
+		  
+		  htim2.Instance = TIM2;
+		  htim2.Init.Prescaler = 71;
+		  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+		  htim2.Init.Period = (50 * usTim1Timerout50us)  + 1; //72000000/720=1000000
+		  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+		  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+		  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
+		  {
+			 
+		  }
+		  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+		  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
+		  {
+			 
+		  }
+		  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+		  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+		  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+		  {
+			
+		  }
+		  HAL_TIM_Base_Start_IT(&htim2);
+
+		  HAL_NVIC_SetPriority(TIM2_IRQn, 1, 1);
+		  HAL_NVIC_EnableIRQ(TIM2_IRQn);
+		  
+		  vMBPortTimersDisable();
+
+			return TRUE;
+		}
+	3.2 其他接口
+		void xMBPortTimersClose(void)
+		{
+			vMBPortTimersDisable();
+		}
+
+		inline void
+		vMBPortTimersEnable(void)
+		{
+
+			HAL_TIM_Base_Start_IT(&htim2);
+		}
+
+		inline void
+		vMBPortTimersDisable(void)
+		{
+			HAL_TIM_Base_Stop_IT(&htim2);
+		}
+
+		void vMBPortTimersDelay(USHORT usTimeOutMS)
+		{
+			
+		}
+
+		void TIM2_IRQHandler(void)
+		{
+			if (__HAL_TIM_GET_IT_SOURCE(&htim2, TIM_FLAG_UPDATE))
+			{
+				__HAL_TIM_CLEAR_IT(&htim2, TIM_FLAG_UPDATE);
+				(void)pxMBPortCBTimerExpired();
+			}
+		}
+		
+3、编写事件模块
+	static eMBEventType eQueuedEvent;
+	static BOOL     xEventInQueue;
+
+	/* ----------------------- Start implementation -----------------------------*/
+	BOOL xMBPortEventInit( void )
+	{
+		xEventInQueue = FALSE;
+		return TRUE;
+	}
+
+	BOOL xMBPortEventPost( eMBEventType eEvent )
+	{
+		xEventInQueue = TRUE;
+		eQueuedEvent = eEvent;
+		return TRUE;
+	}
+
+	BOOL xMBPortEventGet( eMBEventType * eEvent )
+	{
+		BOOL            xEventHappened = FALSE;
+
+		if( xEventInQueue )
+		{
+			*eEvent = eQueuedEvent;
+			xEventInQueue = FALSE;
+			xEventHappened = TRUE;
+		}
+		return xEventHappened;
+	}
+4、编写modbus处理事务,初始化modbus(包括寄存器的访问回调等)
+	4.1 临界区管理
+		void vMBPortEnterCritical( void )
+		{
+			__disable_irq();
+		}
+
+		void vMBPortExitCritical( void )
+		{
+			__enable_irq();
+		}
+
+		void vMBPortClose( void )
+		{
+			extern void xMBPortSerialClose( void );
+			extern void xMBPortTimersClose( void );
+			xMBPortSerialClose(  );
+			xMBPortTimersClose(  );
+		}
+	4.2 modbus底层寄存器定义
+		#include "mb.h"
+
+
+		eMBErrorCode eMBRegInputCB( UCHAR * pucRegBuffer, USHORT usAddress, USHORT usNRegs )
+		{
+			return MB_ENOERR;
+		}
+
+
+		eMBErrorCode eMBRegHoldingCB( UCHAR * pucRegBuffer, USHORT usAddress,
+						 USHORT usNRegs, eMBRegisterMode eMode )
+		{
+			return MB_ENOERR;
+		}
+
+
+		eMBErrorCode eMBRegCoilsCB( UCHAR * pucRegBuffer, USHORT usAddress,
+					   USHORT usNCoils, eMBRegisterMode eMode )
+		{
+			return MB_ENOERR;
+		}
+
+		eMBErrorCode eMBRegDiscreteCB( UCHAR * pucRegBuffer, USHORT usAddress,
+										  USHORT usNDiscrete )
+		{
+			return MB_ENOERR;
+		}
+	4.3 modbus类型定义(创建一个port.h)
+		#ifndef _PORT_H
+		#define _PORT_H
+
+
+		/* ----------------------- Defines ------------------------------------------*/
+		#define	INLINE                      inline
+		#define PR_BEGIN_EXTERN_C           extern "C" {
+		#define	PR_END_EXTERN_C             }
+
+		#define ENTER_CRITICAL_SECTION( )   vMBPortEnterCritical()
+		#define EXIT_CRITICAL_SECTION( )    vMBPortExitCritical()
+
+		#define assert( x )
+
+		typedef char    BOOL;
+
+		typedef unsigned char UCHAR;
+		typedef signed char    CHAR;
+
+		typedef unsigned short USHORT;
+		typedef short   SHORT;
+
+		typedef unsigned long ULONG;
+		typedef long    LONG;
+
+
+		#ifndef TRUE
+		#define TRUE                                		1
+		#endif
+
+		#ifndef FALSE
+		#define FALSE                              		0
+		#endif
+
+		#define MB_PORT_HAS_CLOSE	                 		1
+		#define MB_ASCII_TIMEOUT_WAIT_BEFORE_SEND_MS 		2
+
+		#ifdef __cplusplus
+		extern "C" {
+		#endif
+		/* ----------------------- Prototypes ---------------------------------------*/
+		void            vMBPortEnterCritical( void );
+		void            vMBPortExitCritical( void );
+		#ifdef __cplusplus
+		}
+		#endif
+
+		#endif
+		
+	4.4 编写modbus初始化程序
+	    eMBInit(MB_RTU, 0x01, 2, 115200, MB_PAR_NONE);
+		eMBEnable();
+		while (1)
+		{
+			/* USER CODE END WHILE */
+			eMBPoll();
+			HAL_Delay(10);
+		}
+		
+5、测试modbus协议的读写
+	5.1 下载安装Modbus Poll软件,配置好响应的串口格式即可实现对Modbus从机的读写
+	5.2 具体的寄存器可自己定义(一般的原则是需要flash保存的参数放在一起, 各类寄存器各自放在一起)
+		
+
+	
+		

@@ -1,0 +1,26 @@
+﻿linux下系统安装的初期默认不开启防火墙,具体有没有开始，可以通过
+  1、sudo ufw status来查询
+如果此时防火墙没有启动的话，可以使用
+  2、sudo ufw enable  #启动防火墙
+  3、sudo ufw disable #关闭防火墙
+
+那么防火墙的具体配置如何呢？ 可以使用默认配置
+  4、sudo ufw default deny
+  
+  5、sudo ufw allow 80 #开放使用80端口
+  6、sudo ufw delete allow 80 #禁止使用80端口
+  
+  7、sudo ufw allow from 192.168.1.1 #允许特定ip访问本主机
+  
+在ubuntu下，ufw为本地命令行下的防火墙，那么有没有图形化的呢? 答案是有的，那就是gufw，默认情况
+下系统不安装，需要用户自己安装，安装也非常的简单，
+  sudo apt-get install gufw 即可
+
+在某些情况下连接不上远端的服务器，如通过ssh无法登录远端服务器时，此时可能存在两种情况
+  1、远端是否安装了ssh服务
+     sudo apt-get openssh-server
+  2、服务器端是否开启了防火墙并屏蔽了22端口
+     sudo ufw status查看
+
+  
+

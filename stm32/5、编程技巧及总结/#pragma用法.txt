@@ -1,0 +1,54 @@
+
+#pragma 预处理指令
+格式：#pragma Para  //Para为参数
+
+
+
+#pragma message("I II III !!") //编译输出I II III!!!
+
+举例：
+2>保证头文件编译一次
+#pragma once
+3>预编译到此为止 后面的头文件编译
+#pragma hdrstop
+4>将一个注释记录放到对象文件中执行
+#pragma comment(lib, "user.lib") //链接动态库文件
+5设置字节对齐
+#pragma pack(n) //编译器按照n字节对齐
+#pragma pack() //取消自定义字节对齐
+
+
+
+//对于ICC编译器而言 有如下特性
+//注：_Pragma ("vecror=103") 等价于 #pragma Load = 103
+//定义中断函数：_Pragma("vecror=0x000b") __interrupt void ET0(void)
+//而对于GCC编译器而言  
+//只需要void ET0(void) interrupt 1
+
+#warning "出错"  //编译输出waring：出错
+
+//C51编译器关键字
+_at_:变量存放的地址     如int xdata a _at_ 0X08; 表示变量存放在Xdata区的0X08地址
+alien:与PL/M51兼容关键字  让C51编译器调用PL/M51函数 必须在函数前加alien
+_task_ 和 _priority_  C51编译器使用_task_和_priority支持RTX51 FULL和RTX51 Tiny
+ _task_关键字指定一个函数是一个实时的任务
+_priority关键字指定任务优先级
+reentrant:可重入函数
+//使用场合：当函数A执行时中断产生并在中断中执行A函数，出现重入。此时在函数后加上reentrant。
+//缺点：重入函数采用模拟压栈技术，及二次重入和第一次调用函数使用不同的内存地址保存数据，避免覆盖。使得堆栈容易溢出。
+
+
+#pragma SAVE   //这样保证我们的函数参数直接传递
+#pragma REGPARMS
+//。。。。我们的函数声明     
+#pragma REGPARMS
+
+如
+void B(int c, int d);
+void C(int e, int f);
+若：
+void C(int e, int f)
+{ 
+    B(e, f);	
+}
+那么参数e和f直接传到B而不通过C
