@@ -1,0 +1,53 @@
+
+# Kconfig file for package wiznet
+menuconfig PKG_USING_DM9051
+    bool "DM9051: The Simple Spi Network Card"
+    default n
+    select RT_USING_PIN
+    select RT_USING_SPI
+
+	if PKG_USING_DM9051
+		config BSP_USING_DM9051NP
+			bool "Enable DM9051NP NetWork Card"
+			default n
+			
+			if  BSP_USING_DM9051NP
+				config DM9051_DEBUG
+					bool "Enable DM9051NP Debug Information"
+					default n
+				config FIFO_OVERFLOW_CHECK
+					bool "Using Packet Status Check"
+					default n
+					
+				config DM9051_PACKET_STATUS_STAT
+					bool "Enable DM9051 Network State Statistics"
+					default n
+				
+				config DM9051_IRQ_EANBLE
+					bool "Enable DM9051 RX IRQ"
+					default y
+					
+					if DM9051_IRQ_EANBLE
+						config DM9051_IRQ_PIN 
+							int "IRQ Pin number"
+							range 1 300
+							default 67
+					endif
+					
+				config DM9051_RESET_PIN
+					int "Reset Pin Number"
+					range 1 300
+					default 64
+					
+				config DM9051_IRQ_TASK_PRIORITY
+					int "DM9051 IRQ Task Priority"
+					range 0 31
+					default 5
+					
+				config DM9051_CARD_NAME
+					string "DM9051 Network Card Name"
+					default "dm9051"
+			endif
+	endif
+	
+	

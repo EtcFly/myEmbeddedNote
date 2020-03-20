@@ -1,0 +1,20 @@
+Import('rtconfig')
+from building import *
+
+cwd  = GetCurrentDir()
+path = [cwd + "/inc"]
+
+src = Split('''
+src/drv_dm9051_init.c
+src/drv_dm9051np.c
+''')
+
+CPPPATH = path
+objs = []
+
+if GetDepend(['BSP_USING_DM9051NP']):
+	objs += src
+
+group = DefineGroup('DeviceDrivers', objs, depend = [''], CPPPATH = CPPPATH)
+
+Return('group')
